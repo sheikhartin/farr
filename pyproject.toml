@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "farr"
+version = "0.1.0"
+description = "The gathering place of utilitarians and empiricists!"
+license = "MIT"
+authors = ["Artin Mohammadi <sheikhartin@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/sheikhartin/farr"
+keywords = ["programming-language", "from-scratch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Education",
+    "Topic :: Software Development :: Interpreters",
+]
+include = ["CHANGELOG.md"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.2"
+pytest-cov = "^4.1.0"
+mypy = "^1.8.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+
+[tool.pytest.ini_options]
+addopts = "-vs --no-header --cov-report term-missing --cov=farr"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 80
+skip-string-normalization = true
+target-version = ["py310"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
