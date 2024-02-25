@@ -1,0 +1,20 @@
+/**
+ * Implementation of linear search algorithm using functions...
+ */
+
+fn linear_search(let arr, let target) = {
+  for let elem in arr = {
+    if elem == target = {
+      return! true;
+    }
+  }
+  return! false;
+}
+
+let popular_langs = {
+  "PHP", "R", "Scala", "C#", "Go", "Julia", "Haskell", "Rust",
+  "C", "Lisp", "MATLAB", "Zig", "Lua", "JavaScript", "Ruby",
+  "Kotlin", "Python", "Bash", "Java", "C++", "Swift"};
+let goal_lang = "Bash";
+
+println(linear_search(popular_langs, goal_lang));

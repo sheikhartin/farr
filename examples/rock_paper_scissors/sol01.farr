@@ -1,0 +1,34 @@
+/**
+ * You already know it!
+ */
+
+let rounds = (
+  readln!("How many times do you want to play? ")
+  .toint()
+);
+if rounds <= 0 = {
+  println("The number of rounds cannot be negative!");
+}
+
+for let i in [1..rounds] = {
+  let user_move = (
+    readln!("[R]ock, [P]aper, or [S]cissors? ")
+    .tolower()
+  );
+  let computer_move = (
+    {"r", "p", "s"}
+    .shuffle().[1] // We count from one here!
+  );
+
+  if user_move == computer_move = {
+    println("It's a tie!");
+  } else if (
+    (user_move == "r" && computer_move == "s") ||
+    (user_move == "p" && computer_move == "r") ||
+    (user_move == "s" && computer_move == "p")
+  ) = {
+    println("Unfortunately, you won!");
+  } else = {
+    println("Hahahaha! (•‿•)");
+  }
+}

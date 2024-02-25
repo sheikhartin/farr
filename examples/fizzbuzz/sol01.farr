@@ -1,0 +1,28 @@
+/**
+ * A small challenge to label numbers into three categories...
+ */
+
+let rng_start = (
+  readln!("Enter the starting point of the range: ")
+  .toint()
+);
+let rng_end = (
+  readln!("And also the end: ")
+  .toint()
+);
+if rng_start >= rng_end = {
+  println("The start value must be smaller than the end value!");
+  exit!(1);
+}
+
+for let i in [rng_start..rng_end] = {
+  if % i 15 == 0 = {
+    println("...Fizzbuzz");
+  } else if % i 3 == 0 = {
+    println("...Fizz");
+  } else if % i 5 == 0 = {
+    println("...Buzz");
+  } else = {
+    println("${i}"); // Or just pass `i` as an argument!
+  }
+}

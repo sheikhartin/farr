@@ -1,0 +1,45 @@
+/**
+ * A simple calculator to calculate several operations automatically
+ * on the taken numbers.
+ */
+
+fn add(let x, let y) = {
+  return! + x y;
+}
+
+fn subtract(let x, let y) = {
+  return! - x y;
+}
+
+fn multiply(let x, let y) = {
+  return! * x y;
+}
+
+fn divide(let x, let y) = {
+  return! / x y;
+}
+
+fn modulus(let x, let y) = {
+  return! % x y;
+}
+
+fn power(let x, let y) = {
+  return! ^ x y;
+}
+
+let first_number = (
+  readln!("Enter the first number: ")
+  .tofloat()
+);
+let second_number = (
+  readln!("Enter the second number: ")
+  .tofloat()
+);
+
+for let op, let fn! in {
+  :"+" add, :"-" subtract, :"*" multiply,
+  :"/" divide, :"mod" modulus, :"^" power} = {
+  println(
+    "${first_number} ${op} ${second_number} = ${fn!(first_number, second_number)}"
+  );
+}

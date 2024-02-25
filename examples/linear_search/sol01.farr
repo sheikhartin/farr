@@ -1,0 +1,21 @@
+/**
+ * Implementation of one of the simplest search algorithms for the first time
+ * in Farr programming language!
+ */
+
+use math/random;
+
+let nums = random.randint(0, 50, size=10);
+let goal = (
+  readln!("What is your goal number? ")
+  .toint()
+);
+
+for let num in nums = {
+  if num == goal = {
+    println("Hoooooooooooooooooray!");
+    break!;
+  }
+} else = {
+  println("There is no such thing in the list!");
+}
