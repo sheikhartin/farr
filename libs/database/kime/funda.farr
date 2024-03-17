@@ -1,0 +1,73 @@
+/**
+ * Represents a simple in-memory storage.
+ *
+ * @attr entries - An object for storing key-value pairs.
+ */
+struct MemoryStore = {
+  let entries = {:}
+}
+
+/**
+ * Retrieves all keys in the storage.
+ */
+fn MemoryStore::keys() = {
+  return! entries.keys;
+}
+
+/**
+ * Sets a value in the storage for a specified key.
+ *
+ * @param key - The key in which the value is stored.
+ * @param value - The value to store.
+ */
+fn MemoryStore::set!(let key, let value) = {
+  if ! similartypes?(key, "") = {
+    panic!?(
+      ValueError("The key must be a string.")
+    );
+  }
+  entries.iupdate!({:key value});
+  return! true;
+}
+
+/**
+ * Retrieves a value from the storage by key.
+ *
+ * @param key - The key whose value needs to be retrieved.
+ */
+fn MemoryStore::get(let key) = {
+  return! entries.get(key);
+}
+
+/**
+ * Deletes a key-value pair from the storage by key.
+ *
+ * @param key - The key to delete from the cache.
+ */
+fn MemoryStore::delete!(let key) = {
+  return! entries.popitem!(key);
+}
+
+/**
+ * Exports the storage data to a file.
+ *
+ * @param filepath - The path to the file where the cache data should be saved.
+ *
+ * @note Maybe it's better not to implement it until we can easily manipulate
+ *   a JSON/CSV/XML file.
+ */
+fn MemoryStore::export(let filepath) = {
+  panic!?(NotImplementedError);
+}
+
+/**
+ * Imports storage data from a file.
+ *
+ * @param filepath - The path to the file from which to load the cache data.
+ *
+ * @note Maybe it's better not to implement it until we can easily manipulate
+ *   a JSON/CSV/XML file.
+ */
+fn MemoryStore::import!(let filepath) = {
+  panic!?(NotImplementedError);
+}
