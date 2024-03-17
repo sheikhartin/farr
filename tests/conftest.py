@@ -7,6 +7,7 @@ import pytest
 
 from farr.lexer import FarrRegexLexer
 from farr.parser import FarrParser
+from farr.interpreter import FarrInterpreter
 
 
 @pytest.fixture(scope='session')
@@ -19,3 +20,9 @@ def farr_regex_lexer_fixture() -> FarrRegexLexer:
 def farr_parser_fixture() -> FarrParser:
     """Returns an instance of `FarrParser`."""
     return FarrParser()
+
+
+@pytest.fixture(scope='session')
+def farr_interpreter_fixture() -> FarrInterpreter:
+    """Returns an instance of `FarrInterpreter`."""
+    return FarrInterpreter()
