@@ -1,0 +1,158 @@
+// Constants
+let PI = 3.141592653589793;
+let E = 2.718281828459045;
+
+/**
+ * Adds two numbers and returns the sum.
+ *
+ * @param x - The first number to add.
+ * @param y - The second number to add.
+ */
+fn add(let x, let y) = {
+  return! + x y;
+}
+
+/**
+ * Subtracts the second number from the first number.
+ *
+ * @param x - The number from which to subtract.
+ * @param y - The number to subtract.
+ */
+fn subtract(let x, let y) = {
+  return! - x y;
+}
+
+/**
+ * Multiplies two numbers and returns the product.
+ *
+ * @param x - The first number to multiply.
+ * @param y - The second number to multiply.
+ */
+fn multiply(let x, let y) = {
+  return! * x y;
+}
+
+/**
+ * Divides the first number by the second and returns the quotient.
+ *
+ * @param x - The number to be divided.
+ * @param y - The number to divide by.
+ */
+fn divide(let x, let y) = {
+  if y == 0 = {
+    panic!?(
+      ValueError("Division by zero error!")
+    );
+  }
+  return! / x y;
+}
+
+/**
+ * Calculates the remainder of the division of the first number
+ * by the second number.
+ *
+ * @param x - The dividend.
+ * @param y - The divisor.
+ */
+fn modulus(let x, let y) = {
+  return! % x y;
+}
+
+/**
+ * Raises a number to the power of an exponent.
+ *
+ * @param base - The base number.
+ * @param exponent - The exponent to raise the base to.
+ */
+fn power(let base, let exponent) = {
+  return! ^ base exponent;
+}
+
+/**
+ * Calculates the square root of a number.
+ *
+ * @param x - The number to find the square root of.
+ */
+fn sqrt(let x) = {
+  return! ^ x .5;
+}
+
+/**
+ * Calculates the value of raising e to the power of the input value.
+ *
+ * @param x - The exponent used to raise e.
+ */
+fn exp(let x) = {
+  let result = 1.;
+  let term = 1.;
+  for let i in [1..50] = {
+    term *= / x i;
+    result += term;
+  }
+  return! result;
+}
+
+/**
+ * Calculates the natural logarithm of a given number.
+ *
+ * @param x - The number to calculate the natural logarithm for.
+ */
+fn ln(let x) = {
+  if x <= 0 = {
+    panic!?(
+      ValueError("Natural logarithm is not defined for non-positive values.")
+    );
+  }
+  let guess = 1.;
+  for let i in [1..50] = {
+    let exp! = exp(guess);
+    guess -= / - exp! x exp!;
+  }
+  return! guess;
+}
+
+/**
+ * Calculates the logarithm of a number to base 10.
+ *
+ * @param x - The number to calculate the logarithm for.
+ */
+fn log(let x) = {
+  if x <= 0 = {
+    panic!?(
+      ValueError("Logarithm only defined for positive numbers.")
+    );
+  }
+  return! / ln(x) 2.30258509299;
+}
+
+/**
+ * Calculates the logarithm of a number to base 2.
+ *
+ * @param x - The number to calculate the logarithm for.
+ */
+fn log2(let x) = {
+  if x <= 0 = {
+    panic!?(
+      ValueError("Logarithm only defined for positive numbers.")
+    );
+  }
+  return! / log(x) .30102999566;
+}
+
+/**
+ * Rounds a number down to the nearest integer.
+ *
+ * @param x - The number to round down.
+ */
+fn floor(let x) = {
+  return! x.toint();
+}
+
+/**
+ * Rounds a number up to the nearest integer.
+ *
+ * @param x - The number to round up.
+ */
+fn ceil(let x) = {
+  return! + x.toint() 1;
+}

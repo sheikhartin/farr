@@ -1,0 +1,59 @@
+/**
+ * Generates a random floating-point number between 0 and 1.
+ *
+ * @note Utilizes the `od` and `tr` tools from the operating system
+ *   to generate a random byte.
+ */
+fn random() = {
+  let random_byte = (
+    cmd!?("od -An -N 1 -d /dev/urandom | tr -d ' '")
+    .toint()
+  );
+  return! / random_byte 256;
+}
+
+/**
+ * Generates a random floating-point number or a list of random numbers
+ * within the specified range [a, b].
+ *
+ * @param a - The lower bound of the range.
+ * @param b - The upper bound of the range.
+ * @param size - The number of random numbers to generate. Defaults to 1.
+ */
+fn uniform(let a, let b, let size = 1) = {
+  if size <= 1 = {
+    return! + a * - b a random();
+  }
+
+  let random_numbers = {};
+  for let i in [1..size] = {
+    random_numbers.iappend!(+ a * - b a random());
+  }
+  return! random_numbers;
+}
+
+/**
+ * Generates a random integer number or a list of random numbers within
+ * the specified range [a, b].
+ *
+ * @param a - The lower bound of the range.
+ * @param b - The upper bound of the range.
+ * @param size - The number of random integers to generate. Defaults to 1.
+ */
+fn randint(let a, let b, let size = 1) = {
+  if size <= 1 = {
+    return! (
+      uniform(a, b)
+      .toint()
+    );
+  }
+
+  let random_numbers = {};
+  for let i in [1..size] = {
+    random_numbers.iappend!(
+      uniform(a, b)
+      .toint()
+    );
+  }
+  return! random_numbers;
+}
