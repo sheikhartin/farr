@@ -1,0 +1,88 @@
+use datetime;
+
+/**
+ * A structure representing the logging configuration.
+ *
+ * @attr console - Whether to log to the console or not. True by default.
+ * @attr filepath - Whether to output log messages to a file.
+ *   It is not applied by default.
+ */
+struct Logger = {
+  let console = true,
+  let filepath = null
+}
+
+/**
+ * Logs a message with the specified level.
+ *
+ * @param level - The severity level of the log message.
+ * @param msg - The message to log.
+ */
+fn Logger::log(let level, let msg) = {
+  msg = "[${level.toupper()} ${datetime.now().tostring()}] ${msg}";
+  if console = {
+    println(msg);
+  }
+  if filepath = {
+    let fptr = fileptr(filepath);
+    fptr.includeln!(msg);
+    fptr.close!();
+  }
+  return! true;
+}
+
+/**
+ * Logs a debug message. Debug messages are used to provide detailed
+ * information, typically of interest only when diagnosing problems.
+ *
+ * @param msg - The message to log.
+ */
+fn Logger::debug(let msg) = {
+  log("DEBUG", msg);
+  return! true;
+}
+
+/**
+ * Logs an informational message. Info messages are used to report general
+ * operations or status updates that are useful for users to know.
+ *
+ * @param msg - The message to log.
+ */
+fn Logger::info(let msg) = {
+  log("INFO", msg);
+  return! true;
+}
+
+/**
+ * Logs a warning message. Warning messages are used to indicate a potential
+ * issue or problem that is not immediately impactful but should be addressed.
+ *
+ * @param msg - The message to log.
+ */
+fn Logger::warning(let msg) = {
+  log("WARNING", msg);
+  return! true;
+}
+
+/**
+ * Logs an error message. Error messages are used to report significant
+ * problems that occur during execution, such as a failure in a key operation.
+ *
+ * @param msg - The message to log.
+ */
+fn Logger::error(let msg) = {
+  log("ERROR", msg);
+  return! true;
+}
+
+/**
+ * Logs a critical message. Critical messages are used to report severe
+ * conditions, often indicating that the program's execution has been
+ * severely affected.
+ *
+ * @param msg - The message to log.
+ */
+fn Logger::critical(let msg) = {
+  log("CRITICAL", msg);
+  return! true;
+}
