@@ -1,0 +1,138 @@
+/**
+ * A structure representing a date.
+ *
+ * @attr year - The year component of the date.
+ * @attr month - The month component of the date.
+ * @attr day - The day component of the date.
+ */
+struct Date = {
+  let year,
+  let month,
+  let day
+}
+
+/**
+ * Calculates the distance in days between two Date instances.
+ *
+ * @param other - The `Date` instance to compare with the current instance.
+ */
+fn Date::distance(let other) = {
+  // This simple calculation assumes that each month has 30 days and
+  // does not account for leap years.
+  return! (
+    + (+ (* (- year other.year) 365) (* (- month other.month) 30))
+      (- day other.day)
+  );
+}
+
+/**
+ * Returns the date in the United States format.
+ */
+fn Date::tostring() = {
+  return! "${month}-${day}-${year}";
+}
+
+/**
+ * Retrieves the current date from the system.
+ */
+fn nowdate() = {
+  let components = (
+    cmd!?("date +%D")
+    .split("/")
+  );
+  return! Date(
+    (
+      components.[3]
+      .toint()
+    ),
+    (
+      components.[2]
+      .toint()
+    ),
+    (
+      components.[1]
+      .toint()
+    ),
+  );
+}
+
+/**
+ * A structure representing a time.
+ *
+ * @attr hour - The hour component of the time.
+ * @attr minute - The minute component of the time.
+ * @attr second - The second component of the time.
+ */
+struct Time = {
+  let hour,
+  let minute,
+  let second
+}
+
+/**
+ * Calculates the distance in seconds between two `Time` instances.
+ *
+ * @param other - The `Time` instance to compare with the current instance.
+ */
+fn Time::distance(let other) = {
+  return! (
+    + (+ (* (- hour other.hour) 3600) (* (- minute other.minute) 60))
+      (- second other.second)
+  );
+}
+
+/**
+ * Returns the time to the conventional format.
+ */
+fn Time::tostring() = {
+  return! "${hour}:${minute}:${second}";
+}
+
+/**
+ * Retrieves the current time from the system.
+ */
+fn nowtime() = {
+  let components = (
+    cmd!?("date +%T")
+    .split(":")
+  );
+  return! Time(
+    (
+      components.[1]
+      .toint()
+    ),
+    (
+      components.[2]
+      .toint()
+    ),
+    (
+      components.[3]
+      .toint()
+    ),
+  );
+}
+
+/**
+ * A structure representing the current date and time.
+ *
+ * @attr date - An instance of the `Date` struct.
+ * @attr time - An instance of the `Time` struct.
+ */
+struct Now = {
+  let date,
+  let time
+}
+
+/**
+ * Puts together the date first and then the time.
+ */
+fn Now::tostring() = {
+  return! "${date.tostring()} ${time.tostring()}";
+}
+
+/**
+ * Returns the date and time pair of this moment.
+ */
+fn now() = {
+  return! Now(nowdate(), nowtime());
+}
