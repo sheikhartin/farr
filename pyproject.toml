@@ -15,7 +15,7 @@ classifiers = [
     "Topic :: Education",
     "Topic :: Software Development :: Interpreters",
 ]
-include = ["CHANGELOG.md"]
+include = ["CHANGELOG.md", "Dockerfile", "examples", "libs", "tests"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -36,6 +36,9 @@ testpaths = ["tests"]
 line-length = 80
 skip-string-normalization = true
 target-version = ["py310"]
+
+[tool.poetry.scripts]
+farr = "farr.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]
