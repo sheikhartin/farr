@@ -2,8 +2,8 @@
  * Implementation of linear search algorithm using functions...
  */
 
-fn linear_search(let arr, let target) = {
-  for let elem in arr = {
+fn linear_search(let list, let target) = {
+  for let elem in list = {
     if elem == target = {
       return! true;
     }
