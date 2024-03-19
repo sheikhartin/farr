@@ -215,7 +215,20 @@ class FarrInterpreter(Interpreter):
                         (cleaned_value := re.sub(r'^r?"|"$', '', node.value))
                         and node.value.startswith('r')
                     )
-                    else cleaned_value
+                    else re.sub(
+                        r'\\([ntrb"\\])',
+                        lambda match_: {
+                            'n': '\n',
+                            't': '\t',
+                            'r': '\r',
+                            'b': '\b',
+                            '"': '"',
+                            '\\': '\\',
+                        }.get(
+                            match_.group(1), None  # type: ignore[arg-type]
+                        ),
+                        cleaned_value,
+                    )
                 ),
             )
         )
