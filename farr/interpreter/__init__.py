@@ -331,7 +331,7 @@ class FarrInterpreter(Interpreter):
             self.environment.assign(param.identifier.value, arg)
         for kwarg in kwargs:
             if not self.environment.exists(
-                name := kwarg.variables.items.pop().value, 0
+                name := kwarg.variables.items.copy().pop().value, 0
             ):
                 raise NameError(f'There is no parameter name `{name}`!')
             self.environment.assign(name, kwarg.expression)
@@ -412,7 +412,7 @@ class FarrInterpreter(Interpreter):
             **dict(
                 map(
                     lambda x: (
-                        x.variables.items.pop(0).value,
+                        x.variables.items.copy().pop(0).value,
                         self._interpret(x.expression),
                     ),
                     kwargs,
