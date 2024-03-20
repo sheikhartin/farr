@@ -138,6 +138,10 @@ class HeterogeneousLiteralObject(ExpressionObject):
             )
         return BooleanObject(value=self.value >= other.value)
 
+    def isin(self, list_: 'ListObject') -> 'BooleanObject':
+        """Checks the existence of the object value in the list."""
+        return BooleanObject(value=self.value in list_)
+
 
 class BooleanObject(HeterogeneousLiteralObject):
     def __str__(self) -> str:
@@ -393,6 +397,10 @@ class StringObject(HeterogeneousLiteralObject):
             )
         )
 
+    def contains_q(self, subset: 'StringObject') -> BooleanObject:
+        """Returns whether the given subset exists in the string."""
+        return BooleanObject(value=subset.value in self.value)
+
     def startswith_q(self, prefix: 'StringObject') -> BooleanObject:
         """Returns true if the beginning of the string is the same as the input value."""
         return BooleanObject(value=self.value.startswith(prefix.value))
@@ -564,9 +572,13 @@ class ListObject(DataStructureObject):
         self.elements = sorted(self.elements, key=lambda _: random.random())
         return self
 
-    def join(self, separator: StringObject) -> StringObject:
+    def join(self, separator: Optional[StringObject] = None) -> StringObject:
         """Merges elements together."""
-        return StringObject(value=separator.value.join(map(str, self.elements)))
+        return StringObject(
+            value=(separator.value if separator is not None else '').join(
+                map(str, self.elements)
+            )
+        )
 
 
 @dataclass
@@ -799,77 +811,6 @@ class PythonNativeSimilarTypesObject(PythonNativeObject):
     ) -> BooleanObject:
         """Checks whether there are similar types or not."""
         return BooleanObject(value=object_.__class__ == target.__class__)
-
-
-@dataclass
-class PythonNativeFilePointerObject(PythonNativeObject):
-    ptr: Optional[pathlib.Path] = field(default=None, init=False, kw_only=True)
-
-    def __str__(self) -> str:
-        """Returns the absolute path of the file."""
-        return str(self.ptr)
-
-    def __call__(
-        self,
-        filepath: StringObject,
-    ) -> 'PythonNativeFilePointerObject':
-        """Reads the entire file and returns it as a string."""
-        self.ptr = pathlib.Path(filepath.value).resolve()
-        self.ptr.touch()
-        return self
-
-    def read(self) -> StringObject:
-        """Returns the content of the file."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        return StringObject(value=self.ptr.read_text())
-
-    def readlines(self) -> ListObject:
-        """Reads the file and returns its content as a list of strings."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        return ListObject(elements=self.ptr.read_text().splitlines())  # type: ignore[arg-type]
-
-    def write_e(self, content: StringObject) -> NullObject:
-        """Rewrites the content of the file."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        self.ptr.write_text(content.value)
-        return NullObject()
-
-    def writeln_e(self, content: StringObject) -> NullObject:
-        """Overwrites the given content with a `\n` in the file."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        self.ptr.write_text(f'{content.value}\n')
-        return NullObject()
-
-    def include_e(self, content: StringObject) -> NullObject:
-        """Adds to the end of the file."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        self.ptr.write_text(self.ptr.read_text() + content.value)
-        return NullObject()
-
-    def includeln_e(self, content: StringObject) -> NullObject:
-        """Adds the content to the end of the file with a `\n`."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        self.ptr.write_text(f'{self.ptr.read_text() + content.value}\n')
-        return NullObject()
-
-    def clear_e(self) -> NullObject:
-        """Deletes all the contents of the file."""
-        if self.ptr is None:
-            raise ReferenceError('Open the file first!')
-        with self.ptr.open('w') as _:
-            pass
-        return NullObject()
-
-    def close_e(self) -> NullObject:
-        """Deletes the file pointer."""
-        self.ptr = None
-        return NullObject()
 
 
 class PythonNativeShellExecutionObject(PythonNativeObject):

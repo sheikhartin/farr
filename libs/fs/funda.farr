@@ -1,0 +1,152 @@
+use platform;
+
+/**
+ * Represents the base structure for file system operations.
+ *
+ * @attr path - The file system path to be managed.
+ */
+struct FileSystem = {
+  let path
+}
+
+/**
+ * Checks if the file or directory exists at the given path.
+ */
+fn FileSystem::exists?() = {
+  if platform.os_type() == "Windows" = {
+    if cmd!?(
+      "if exist \"${path}\" (echo true) else (echo false)"
+    ) == "true" = {
+      return! true;
+    }
+  } else = {
+    if cmd!?(
+      "test -e '${path}' && echo true || echo false"
+    ) == "true" = {
+      return! true;
+    }
+  }
+  return! false;
+}
+
+/**
+ * Represents a file in the file system.
+ */
+struct File < FileSystem = {
+}
+
+/**
+ * Creates a new file if it does not exist.
+ */
+fn File::touch() = {
+  if platform.os_type() == "Windows" = {
+    cmd!?("if not exist \"${path}\" type nul > \"${path}\"");
+  } else = {
+    cmd!?("touch '${path}'");
+  }
+  return! true;
+}
+
+/**
+ * Reads the text content of a file.
+ */
+fn File::read_all() = {
+  if ! exists?() = {
+    panic!?(
+      OSError("The given path `${path}` is not available!")
+    );
+  }
+
+  if platform.os_type() == "Windows" = {
+    return! cmd!?("type \"${path}\"");
+  } else = {
+    return! cmd!?("cat '${path}'");
+  }
+  return! null;
+}
+
+/**
+ * Clears the content of the file.
+ */
+fn File::clear!() = {
+  if ! exists?() = {
+    panic!?(
+      OSError("The given path `${path}` is not available!")
+    );
+  }
+
+  if platform.os_type() == "Windows" = {
+    cmd!?("type nul > \"${path}\"");
+  } else = {
+    cmd!?("cat /dev/null > '${path}'");
+  }
+  return! true;
+}
+
+/**
+ * Appends the given content to the end of the file.
+ *
+ * @param content - The content to be appended to the file.
+ * @param create_if_missing - Determines whether to create the file if it
+ *   does not exist. It throws an error by default.
+ */
+fn File::write!(let content, let create_if_missing = false) = {
+  if ! exists?() = {
+    if create_if_missing = {
+      touch();
+    } else = {
+      panic!?(
+        OSError("The given path `${path}` is not available!")
+      );
+    }
+  }
+
+  if platform.os_type() == "Windows" = {
+    cmd!?("<nul set /p=\"${content}\" >> \"${path}\"");
+  } else = {
+    cmd!?("printf '%s' '${content}' >> '${path}'");
+  }
+  return! true;
+}
+
+/**
+ * Represents a directory in the file system.
+ */
+struct Directory < FileSystem = {
+}
+
+/**
+ * Creates a new directory.
+ */
+fn Directory::make() = {
+  if platform.os_type() == "Windows" = {
+    cmd!?("mkdir \"${path}\"");
+  } else = {
+    cmd!?("mkdir -p '${path}'");
+  }
+  return! true;
+}
+
+/**
+ * Lists the contents of the directory.
+ */
+fn Directory::scan() = {
+  if ! exists?() = {
+    panic!?(
+      OSError("The given path `${path}` is not available!")
+    );
+  }
+
+  if platform.os_type() == "Windows" = {
+    return! (
+      cmd!?("dir /b \"${path}\"")
+      .split("\r\n")
+    );
+  } else = {
+    return! (
+      cmd!?("ls -1 '${path}'")
+      .split("\n")
+    );
+  }
+  return! null;
+}
