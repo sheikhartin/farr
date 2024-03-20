@@ -1,15 +1,13 @@
+use os;
+
 /**
  * Generates a random floating-point number between 0 and 1.
- *
- * @note Utilizes the `od` and `tr` tools from the operating system
- *   to generate a random byte.
  */
 fn random() = {
-  let random_byte = (
-    cmd!?("od -An -N 1 -d /dev/urandom | tr -d ' '")
-    .toint()
+  return! (
+    os._python("import random; print(random.random())")
+    .tofloat()
   );
-  return! / random_byte 256;
 }
 
 /**

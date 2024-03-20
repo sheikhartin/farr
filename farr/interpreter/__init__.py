@@ -95,7 +95,6 @@ from farr.interpreter.objects import (
     PythonNativeExitObject,
     PythonNativeTypeOfObject,
     PythonNativeSimilarTypesObject,
-    PythonNativeFilePointerObject,
     PythonNativeShellExecutionObject,
     PythonNativeBaseErrorObject,
     PythonNativeKeyboardInterruptErrorObject,
@@ -134,7 +133,6 @@ class FarrInterpreter(Interpreter):
         'exit_e': PythonNativeExitObject(),
         'typeof_q': PythonNativeTypeOfObject(),
         'similartypes_q': PythonNativeSimilarTypesObject(),
-        'fileptr': PythonNativeFilePointerObject(),
         'cmd_eq': PythonNativeShellExecutionObject(),
         'BaseError': PythonNativeBaseErrorObject,
         'KeyboardInterruptError': PythonNativeKeyboardInterruptErrorObject,
@@ -215,7 +213,20 @@ class FarrInterpreter(Interpreter):
                         (cleaned_value := re.sub(r'^r?"|"$', '', node.value))
                         and node.value.startswith('r')
                     )
-                    else cleaned_value
+                    else re.sub(
+                        r'\\([ntrb"\\])',
+                        lambda match_: {
+                            'n': '\n',
+                            't': '\t',
+                            'r': '\r',
+                            'b': '\b',
+                            '"': '"',
+                            '\\': '\\',
+                        }.get(
+                            match_.group(1), None  # type: ignore[arg-type]
+                        ),
+                        cleaned_value,
+                    )
                 ),
             )
         )
@@ -320,7 +331,7 @@ class FarrInterpreter(Interpreter):
             self.environment.assign(param.identifier.value, arg)
         for kwarg in kwargs:
             if not self.environment.exists(
-                name := kwarg.variables.items.pop().value, 0
+                name := kwarg.variables.items.copy().pop().value, 0
             ):
                 raise NameError(f'There is no parameter name `{name}`!')
             self.environment.assign(name, kwarg.expression)
@@ -401,7 +412,7 @@ class FarrInterpreter(Interpreter):
             **dict(
                 map(
                     lambda x: (
-                        x.variables.items.pop(0).value,
+                        x.variables.items.copy().pop(0).value,
                         self._interpret(x.expression),
                     ),
                     kwargs,

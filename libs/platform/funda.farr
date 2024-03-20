@@ -1,0 +1,49 @@
+use os;
+
+/**
+ * A structure to hold information about the operating system platform.
+ *
+ * @attr os_type - The type of operating system (e.g., Windows, Linux).
+ * @attr os_release - The release version of the operating system.
+ * @attr cpu_arch - The architecture of the CPU (e.g., x86_64, ARM).
+ */
+struct Platform = {
+  let os_type,
+  let os_release,
+  let cpu_arch
+}
+
+/**
+ * Converts the platform information into a string format.
+ */
+fn Platform::tostring() = {
+  return! "${os_type}/${os_release}/${cpu_arch}";
+}
+
+/**
+ * Retrieves the operating system type.
+ */
+fn os_type() = {
+  return! os._python("import platform; print(platform.system())");
+}
+
+/**
+ * Retrieves the operating system release version.
+ */
+fn os_release() = {
+  return! os._python("import platform; print(platform.release())");
+}
+
+/**
+ * Retrieves the CPU architecture.
+ */
+fn cpu_arch() = {
+  return! os._python("import platform; print(platform.machine())");
+}
+
+/**
+ * Constructs a Platform object with the current operating system information.
+ */
+fn platform() = {
+  return! Platform(os_type(), os_release(), cpu_arch());
+}

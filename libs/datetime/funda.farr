@@ -1,3 +1,5 @@
+use os;
+
 /**
  * A structure representing a date.
  *
@@ -35,14 +37,15 @@ fn Date::tostring() = {
 /**
  * Retrieves the current date from the system.
  */
-fn nowdate() = {
+fn today_date() = {
   let components = (
-    cmd!?("date +%D")
-    .split("/")
+    os._python("from datetime import datetime; print(str(datetime.now()))")
+    .split(" ").[1]
+    .split("-")
   );
   return! Date(
     (
-      components.[3]
+      components.[1]
       .toint()
     ),
     (
@@ -50,7 +53,7 @@ fn nowdate() = {
       .toint()
     ),
     (
-      components.[1]
+      components.[3]
       .toint()
     ),
   );
@@ -91,9 +94,10 @@ fn Time::tostring() = {
 /**
  * Retrieves the current time from the system.
  */
-fn nowtime() = {
+fn system_clock() = {
   let components = (
-    cmd!?("date +%T")
+    os._python("from datetime import datetime; print(str(datetime.now()))")
+    .split(" ").[2]
     .split(":")
   );
   return! Time(
@@ -107,7 +111,7 @@ fn nowtime() = {
     ),
     (
       components.[3]
-      .toint()
+      .tofloat()
     ),
   );
 }
@@ -134,5 +138,5 @@ fn Now::tostring() = {
  * Returns the date and time pair of this moment.
  */
 fn now() = {
-  return! Now(nowdate(), nowtime());
+  return! Now(today_date(), system_clock());
 }
