@@ -1,4 +1,5 @@
 use datetime;
+use fs;
 
 /**
  * A structure representing the logging configuration.
@@ -24,9 +25,8 @@ fn Logger::log(let level, let msg) = {
     println(msg);
   }
   if filepath = {
-    let fptr = fileptr(filepath);
-    fptr.includeln!(msg);
-    fptr.close!();
+    fs.File(filepath)
+      .write!("${msg}\n", create_if_missing=true);
   }
   return! true;
 }

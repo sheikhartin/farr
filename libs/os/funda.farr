@@ -1,0 +1,27 @@
+/**
+ * Retrieves the operating system type.
+ *
+ * @note It may be wrong.
+ */
+fn _system_type() = {
+  if (
+    cmd!?("uname -s 2>/dev/null || ver >nul 2>&1")
+    .contains?("Microsoft")
+  ) = {
+    return! "Windows";
+  }
+  return! "Unix-based";
+}
+
+/**
+ * Executes a Python command with appropriate quoting based on the OS.
+ *
+ * @param cmd - The Python command to execute.
+ */
+fn _python(let cmd) = {
+  let quote_style = "'";
+  if _system_type() == "Windows" = {
+    quote_style = "\"";
+  }
+  return! cmd!?("python -c ${quote_style}${cmd}${quote_style}");
+}
