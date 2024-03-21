@@ -23,10 +23,11 @@ python = "^3.10"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.0.2"
 pytest-cov = "^4.1.0"
-mypy = "^1.8.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.2.0"
+mypy = "^1.8.0"
+ruff = "^0.3.3"
 
 [tool.pytest.ini_options]
 addopts = "-vs --no-header --cov-report term-missing --cov=farr"
