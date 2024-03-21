@@ -6,7 +6,6 @@
 import sys
 import subprocess
 import random
-import pathlib
 from dataclasses import dataclass, field
 from typing import types, Optional, Union, Any, List, Tuple, Dict  # type: ignore[attr-defined]
 
@@ -51,11 +50,11 @@ class NullObject(ExpressionObject):
 
     def __eq__(self, other: FarrObject) -> 'BooleanObject':  # type: ignore[override]
         """Compares the equality of nothing with another object."""
-        return BooleanObject(value=False == other)
+        return BooleanObject(value=False == other)  # noqa: E712
 
     def __ne__(self, other: FarrObject) -> 'BooleanObject':  # type: ignore[override]
         """Compares the inequality of nothing with another object."""
-        return BooleanObject(value=False != other)
+        return BooleanObject(value=False != other)  # noqa: E712
 
 
 @dataclass
