@@ -1,3 +1,7 @@
+### [1.1.0](https://github.com/sheikhartin/farr/releases/tag/1.1.0)
+
+For better debugging, we will use a [linter](https://github.com/astral-sh/ruff).
+
 ### [1.0.1](https://github.com/sheikhartin/farr/releases/tag/1.0.1)
 
 Fixing the dissimilarity of versions in different places...
