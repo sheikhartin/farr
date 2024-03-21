@@ -9,7 +9,6 @@ import pathlib
 from farr.exceptions import InterpretError
 from farr.lexer import FarrRegexLexer
 from farr.parser import FarrParser
-from farr.interpreter.base import Environment
 from farr.interpreter import FarrInterpreter
 
 
@@ -65,7 +64,7 @@ def main() -> None:
     )
     cmd_parser.add_argument('code', type=str, help='the code to execute')
 
-    shell_parser = subparsers.add_parser('shell', help='Start the Farr REPL.')
+    subparsers.add_parser('shell', help='Start the Farr REPL.')
 
     if (args := parser.parse_args()).command == 'run':
         run_file(args.filepath)
