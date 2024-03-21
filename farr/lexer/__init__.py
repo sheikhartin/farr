@@ -76,6 +76,7 @@ class FarrRegexLexer(RegexLexer):
                 Token('Variable', r'let'),
                 Token('If', r'if'),
                 Token('Else', r'else'),
+                Token('Match', r'match'),
                 Token('While', r'while'),
                 Token('Break', r'break!'),
                 Token('Continue', r'continue!'),
