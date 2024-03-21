@@ -1,3 +1,7 @@
+### [0.2.1](https://github.com/sheikhartin/farr/releases/tag/0.2.1)
+
+Updating our `libs` folder structure...
+
 ### [0.2.0](https://github.com/sheikhartin/farr/releases/tag/0.2.0)
 
 An honest attempt to adapt to different platforms!
