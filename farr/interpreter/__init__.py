@@ -27,10 +27,8 @@ from farr.parser.nodes import (
     ASTNode,
     ModuleNode,
     BlockNode,
-    ExpressionNode,
     PassNode,
     NullNode,
-    HeterogeneousLiteralNode,
     IntegerNode,
     FloatNode,
     StringNode,
@@ -52,7 +50,6 @@ from farr.parser.nodes import (
     RelationalOperationNode,
     LogicalOperationNode,
     TernaryOperationNode,
-    StatementNode,
     UseNode,
     VariableDeclarationNode,
     AssignmentNode,
@@ -69,7 +66,6 @@ from farr.parser.nodes import (
     IfNode,
     MatchNode,
     TryNode,
-    CatchNode,
     FunctionDefinitionNode,
     MemberFunctionDefinitionNode,
     StructDefinitionNode,
@@ -923,12 +919,15 @@ class FarrInterpreter(Interpreter):
         """Manages trial and error."""
         try:
             self._interpret(node.body)
-        except InterpretError as e:
+        except InterpretError as e:  # noqa: F841
             catch = node.catch
             while catch is not None:
                 if matches := list(
                     filter(
-                        lambda x: issubclass(e.error.__class__, x.__bases__),  # type: ignore[arg-type, attr-defined]
+                        lambda x: issubclass(  # type: ignore[arg-type]
+                            e.error.__class__,  # noqa: F821
+                            x.__bases__,  # type: ignore[attr-defined]
+                        ),
                         map(
                             lambda x: self.environment.locate(x.value),  # type: ignore[union-attr]
                             catch.excepts.items,
