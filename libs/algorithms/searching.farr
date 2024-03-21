@@ -5,11 +5,12 @@
  * @param target - The target element to find.
  */
 fn linear_search(let list, let target) = {
-  let index = 0;
+  let index = 1;
   while index < list.length = {
-    if list.[index++] == target = {
+    if list.[index] == target = {
       return! index;
     }
+    index++;
   }
   return! -1;
 }
