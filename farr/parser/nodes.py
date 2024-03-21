@@ -4,7 +4,7 @@
 # https://github.com/sheikhartin/farr
 
 from dataclasses import dataclass, field
-from typing import Optional, Union, List
+from typing import Optional, Union, Any, List
 
 
 class ASTNode:
@@ -12,11 +12,11 @@ class ASTNode:
 
 
 @dataclass
-class ModuleNode(ASTNode):
-    body: List[ASTNode] = field(kw_only=True)
+class BlockNode(ASTNode):
+    body: List[Union[ASTNode, Any]] = field(kw_only=True)
 
 
-class BlockNode(ModuleNode):
+class ModuleNode(BlockNode):
     pass
 
 
@@ -73,6 +73,7 @@ class ItemizedExpressionNode(ExpressionNode):
             ExpressionNode,
             'VariableDeclarationNode',
             'AssignmentNode',
+            Any,
         ]
     ] = field(kw_only=True)
 
@@ -127,6 +128,18 @@ class NegationOperationNode(UnaryOperationNode):
     pass
 
 
+class PrefixOperationNode(UnaryOperationNode):
+    pass
+
+
+class PreIncrementNode(PrefixOperationNode):
+    pass
+
+
+class PreDecrementNode(PrefixOperationNode):
+    pass
+
+
 class PostfixOperationNode(UnaryOperationNode):
     pass
 
@@ -155,6 +168,13 @@ class RelationalOperationNode(BinaryOperationNode):
 
 class LogicalOperationNode(BinaryOperationNode):
     pass
+
+
+@dataclass
+class TernaryOperationNode(PositionedNode, ExpressionNode):
+    then: ExpressionNode = field(kw_only=True)
+    condition: ExpressionNode = field(kw_only=True)
+    orelse: ExpressionNode = field(kw_only=True)
 
 
 class StatementNode(ASTNode):
@@ -238,6 +258,24 @@ class IfNode(ControlFlowNode):
             'IfNode',
         ]
     ] = field(kw_only=True)
+
+
+@dataclass
+class CaseNode(StatementNode):
+    condition: ItemizedExpressionNode = field(kw_only=True)
+    body: BlockNode = field(kw_only=True)
+    orelse: Optional[
+        Union[
+            BlockNode,
+            'CaseNode',
+        ]
+    ] = field(kw_only=True)
+
+
+@dataclass
+class MatchNode(StatementNode):
+    expression: ExpressionNode = field(kw_only=True)
+    body: BlockNode = field(kw_only=True)
 
 
 @dataclass

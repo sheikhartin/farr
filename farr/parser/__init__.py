@@ -30,11 +30,14 @@ from farr.parser.nodes import (
     CallNode,
     GroupedExpressionNode,
     NegationOperationNode,
+    PreIncrementNode,
+    PreDecrementNode,
     PostIncrementNode,
     PostDecrementNode,
     ArithmeticOperationNode,
     RelationalOperationNode,
     LogicalOperationNode,
+    TernaryOperationNode,
     StatementNode,
     UseNode,
     VariableDeclarationNode,
@@ -50,6 +53,8 @@ from farr.parser.nodes import (
     BreakNode,
     ContinueNode,
     IfNode,
+    MatchNode,
+    CaseNode,
     TryNode,
     CatchNode,
     FunctionDefinitionNode,
@@ -309,6 +314,30 @@ class FarrParser(Parser):
             ),
         )
 
+    def _parse_pre_increment(self) -> PreIncrementNode:
+        """Parses a pre-increment operation."""
+        self.expect('Increment')
+        operator = self._current_token
+        self.step()
+        return PreIncrementNode(
+            row=operator.row,  # type: ignore[attr-defined]
+            column=operator.column,  # type: ignore[attr-defined]
+            operator=None,
+            operand=self._dot_separated_items(self._parse_identifier),  # type: ignore[attr-defined]
+        )
+
+    def _parse_pre_decrement(self) -> PreDecrementNode:
+        """Parses a pre-decrement operation."""
+        self.expect('Decrement')
+        operator = self._current_token
+        self.step()
+        return PreDecrementNode(
+            row=operator.row,  # type: ignore[attr-defined]
+            column=operator.column,  # type: ignore[attr-defined]
+            operator=None,
+            operand=self._dot_separated_items(self._parse_identifier),
+        )
+
     def _parse_post_increment(self) -> PostIncrementNode:
         """Parses a post-increment operation."""
         operand = self._dot_separated_items(self._parse_identifier)
@@ -490,7 +519,11 @@ class FarrParser(Parser):
 
     def _process_term(self) -> Optional[ExpressionNode]:
         """Processes a term expression."""
-        if self._look_until(('Increment',), ('Identifier', 'Symbol', 'Dot')):
+        if self.check('Increment'):
+            return self._parse_pre_increment()
+        elif self.check('Decrement'):
+            return self._parse_pre_decrement()
+        elif self._look_until(('Increment',), ('Identifier', 'Symbol', 'Dot')):
             return self._parse_post_increment()
         elif self._look_until(('Decrement',), ('Identifier', 'Symbol', 'Dot')):
             return self._parse_post_decrement()
@@ -558,6 +591,25 @@ class FarrParser(Parser):
                     operator=operator.name,  # type: ignore[attr-defined]
                     left=left,
                     right=self._validate(  # type: ignore[arg-type]
+                        self._process_expression,
+                        ('Expression',),
+                    ),
+                )
+            while self.check('If'):
+                if_ = self._current_token
+                self.step()
+                condition = self._validate(
+                    self._process_expression,
+                    ('Expression',),
+                )
+                self.expect('Else')
+                self.step()
+                left = TernaryOperationNode(
+                    row=if_.row,  # type: ignore[attr-defined]
+                    column=if_.column,  # type: ignore[attr-defined]
+                    then=left,
+                    condition=condition,  # type: ignore[arg-type]
+                    orelse=self._validate(  # type: ignore[arg-type]
                         self._process_expression,
                         ('Expression',),
                     ),
@@ -802,27 +854,63 @@ class FarrParser(Parser):
             )
         return IfNode(condition=condition, body=body, orelse=orelse)  # type: ignore[arg-type]
 
+    def _parse_case(self) -> CaseNode:
+        """Parses a case of the match statement."""
+        self.expect('For')
+        self.step()
+        condition = (
+            self._parenthesized(  # type: ignore[arg-type]
+                partial(
+                    self._comma_separated_items,
+                    fn=self._process_expression,
+                )
+            )
+            if self.check('LeftParenthesis')
+            else self._validate(
+                self._process_expression,
+                ('Expression',),
+            )
+        )
+        body = self._parse_block(self._process_expression_or_statement)
+        if (orelse := None) or self.check('Else') and self.peek('For'):
+            self.step()
+            orelse = self._parse_case()
+        elif self.check('Else'):
+            self.step()
+            orelse = self._parse_block(self._process_expression_or_statement)  # type: ignore[assignment]
+        return CaseNode(condition=condition, body=body, orelse=orelse)  # type: ignore[arg-type]
+
+    def _parse_match(self) -> MatchNode:
+        """Parses a match-for statement."""
+        self.expect('Match')
+        self.step()
+        return MatchNode(
+            expression=self._validate(  # type: ignore[arg-type]
+                self._process_expression,
+                ('Expression',),
+            ),
+            body=self._parse_block(self._parse_case),
+        )
+
     def _parse_catch(self) -> CatchNode:
         """Parses a catch clause."""
         self.expect('Catch')
         self.step()
-        excepts = (
-            self._parenthesized(
-                partial(
-                    self._comma_separated_items,
-                    fn=self._parse_identifier,
+        return CatchNode(
+            excepts=(
+                self._parenthesized(  # type: ignore[arg-type]
+                    partial(
+                        self._comma_separated_items,
+                        fn=self._parse_identifier,
+                    )
                 )
-            )
-            if self.check('LeftParenthesis')
-            else self._comma_separated_items(self._parse_identifier)
+                if self.check('LeftParenthesis')
+                else self._comma_separated_items(self._parse_identifier)
+            ),
+            as_=self._parse_identifier() if self.check('Identifier') else None,
+            body=self._parse_block(self._process_expression_or_statement),
+            orelse=self._parse_catch() if self.check('Catch') else None,
         )
-        if (as_ := None) or self.check('GreaterThan'):
-            self.step()
-            as_ = self._parse_identifier()
-        body = self._parse_block(self._process_expression_or_statement)
-        if (orelse := None) or self.check('Catch'):
-            orelse = self._parse_catch()
-        return CatchNode(excepts=excepts, as_=as_, body=body, orelse=orelse)  # type: ignore[arg-type]
 
     def _parse_try(self) -> TryNode:
         """Parses a try-catch statement."""
@@ -968,6 +1056,8 @@ class FarrParser(Parser):
             return self._followed_by_semicolon(self._parse_continue)  # type: ignore[return-value]
         elif self.check('If'):
             return self._parse_if()
+        elif self.check('Match'):
+            return self._parse_match()
         elif self.check('Try'):
             return self._parse_try()
         elif self.check('Function') and not self._except_current_and_next_at(
