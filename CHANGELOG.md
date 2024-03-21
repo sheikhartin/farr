@@ -1,3 +1,7 @@
+### [1.0.1](https://github.com/sheikhartin/farr/releases/tag/1.0.1)
+
+Fixing the dissimilarity of versions in different places...
+
 ### [1.0.0](https://github.com/sheikhartin/farr/releases/tag/1.0.0)
 
 Introducing ternary expressions for inline conditional logic, a similar statement to switch, and prefix operations for direct arithmetic manipulation!
