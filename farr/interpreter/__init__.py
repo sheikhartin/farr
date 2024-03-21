@@ -44,11 +44,14 @@ from farr.parser.nodes import (
     CallNode,
     GroupedExpressionNode,
     NegationOperationNode,
+    PreIncrementNode,
+    PreDecrementNode,
     PostIncrementNode,
     PostDecrementNode,
     ArithmeticOperationNode,
     RelationalOperationNode,
     LogicalOperationNode,
+    TernaryOperationNode,
     StatementNode,
     UseNode,
     VariableDeclarationNode,
@@ -64,6 +67,7 @@ from farr.parser.nodes import (
     BreakNode,
     ContinueNode,
     IfNode,
+    MatchNode,
     TryNode,
     CatchNode,
     FunctionDefinitionNode,
@@ -444,9 +448,9 @@ class FarrInterpreter(Interpreter):
         """Interprets a negation operation."""
         return BooleanObject(value=not self._interpret(node.operand))
 
-    def _interpret_post_increment_node(
+    def _interpret_pre_increment_node(
         self,
-        node: PostIncrementNode,
+        node: PreIncrementNode,
     ) -> Union[IntegerObject, FloatObject]:
         """Adds one unit to the previous value and returns it."""
         *pointers, target = node.operand.items  # type: ignore[attr-defined]
@@ -464,12 +468,12 @@ class FarrInterpreter(Interpreter):
             target.value,
             result := pointer.environment.locate(target.value)
             + IntegerObject(value=1),
-        )  # type: ignore[return-value]
+        )
         return result
 
-    def _interpret_post_decrement_node(
+    def _interpret_pre_decrement_node(
         self,
-        node: PostDecrementNode,
+        node: PreDecrementNode,
     ) -> Union[IntegerObject, FloatObject]:
         """Subtracts one unit from the previous value and returns it."""
         *pointers, target = node.operand.items  # type: ignore[attr-defined]
@@ -486,6 +490,52 @@ class FarrInterpreter(Interpreter):
         pointer.environment.replace(
             target.value,
             result := pointer.environment.locate(target.value)
+            - IntegerObject(value=1),
+        )
+        return result
+
+    def _interpret_post_increment_node(
+        self,
+        node: PostIncrementNode,
+    ) -> Union[IntegerObject, FloatObject]:
+        """Returns the previous value and then adds one to it."""
+        *pointers, target = node.operand.items  # type: ignore[attr-defined]
+        if not pointers:
+            self.environment.replace(
+                target.value,
+                (result := self.environment.locate(target.value))
+                + IntegerObject(value=1),
+            )
+            return result
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+        pointer.environment.replace(
+            target.value,
+            (result := pointer.environment.locate(target.value))
+            + IntegerObject(value=1),
+        )
+        return result
+
+    def _interpret_post_decrement_node(
+        self,
+        node: PostDecrementNode,
+    ) -> Union[IntegerObject, FloatObject]:
+        """Returns the previous value and then subtracts one from it."""
+        *pointers, target = node.operand.items  # type: ignore[attr-defined]
+        if not pointers:
+            self.environment.replace(
+                target.value,
+                (result := self.environment.locate(target.value))
+                - IntegerObject(value=1),
+            )
+            return result
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+        pointer.environment.replace(
+            target.value,
+            (result := pointer.environment.locate(target.value))
             - IntegerObject(value=1),
         )
         return result
@@ -550,6 +600,21 @@ class FarrInterpreter(Interpreter):
             case 'Or':
                 return left or right
         return None  # type: ignore[return-value]
+
+    def _interpret_ternary_operation_node(
+        self,
+        node: TernaryOperationNode,
+    ) -> FarrObject:
+        """Interprets a condition as an expression."""
+        return (
+            self._interpret(node.then)
+            if self._interpret(node.condition)
+            else (
+                self._interpret(node.orelse)
+                if node.orelse is not None
+                else None
+            )
+        )
 
     def _resolve_import_path(
         self,
@@ -835,6 +900,25 @@ class FarrInterpreter(Interpreter):
             self._interpret(node.orelse)
         return None
 
+    def _interpret_match_node(self, node: MatchNode) -> None:
+        """Interprets a match-for statement."""
+        result = self._interpret(node.expression)
+        case = node.body.body.pop(0)
+        while case is not None:
+            if isinstance(case, BlockNode):
+                self._interpret(case)
+                return None
+            elif (
+                not isinstance(case.condition, ItemizedExpressionNode)  # type: ignore[union-attr]
+                and result == self._interpret(case.condition)  # type: ignore[union-attr]
+            ) or result in self._interpret(
+                case.condition  # type: ignore[union-attr]
+            ):
+                self._interpret(case.body)  # type: ignore[union-attr]
+                return None
+            case = case.orelse  # type: ignore[union-attr]
+        return None
+
     def _interpret_try_node(self, node: TryNode) -> None:
         """Manages trial and error."""
         try:
@@ -903,7 +987,7 @@ class FarrInterpreter(Interpreter):
             lambda x: self.environment.locate(x.value),  # type: ignore[union-attr]
             parents.items if parents is not None else [],
         ):
-            attributes.items = parent.attributes.items + attributes.items  # type: ignore[attr-defined]
+            attributes.items = parent.attributes.items + attributes.items  # type: ignore[union-attr]
             body.body = parent.body.body + body.body
         return body, attributes  # type: ignore[return-value]
 
