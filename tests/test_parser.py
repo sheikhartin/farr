@@ -149,7 +149,7 @@ def test_factorial_calculator_syntax_tree(
                 body=BlockNode(
                     body=[
                         MultiplyAssignmentNode(
-                            variables=ItemizedExpressionNode(
+                            references=ItemizedExpressionNode(
                                 items=[
                                     IdentifierNode(
                                         row=1, column=45, value='result'

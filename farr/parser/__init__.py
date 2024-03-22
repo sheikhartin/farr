@@ -445,12 +445,25 @@ class FarrParser(Parser):
             ),
         )
 
+    def _parse_keyword_assignment(self) -> AssignmentNode:
+        """"""
+        references = self._dot_separated_items(self._parse_identifier)
+        self.expect('Equal')
+        self.step()
+        return AssignmentNode(
+            references=references,
+            expression=self._validate(  # type: ignore[arg-type]
+                self._process_expression,
+                ('Expression',),
+            ),
+        )
+
     def _resolve_call_argument(
         self,
     ) -> Optional[Union[ExpressionNode, AssignmentNode]]:
         """Resolves a call argument expression."""
         return (
-            self._parse_assignment()
+            self._parse_keyword_assignment()
             if self.check('Identifier', 'Symbol') and self.peek('Equal')
             else self._process_expression()
         )
@@ -642,91 +655,105 @@ class FarrParser(Parser):
             identifier=identifier, expression=expression
         )  # type: ignore[arg-type]
 
-    def _parse_assignment(self) -> AssignmentNode:
+    def _parse_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> AssignmentNode:
         """Parses an assignment statement."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('Equal')
         self.step()
         return AssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_add_assignment(self) -> AddAssignmentNode:
+    def _parse_add_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> AddAssignmentNode:
         """Parses an addition assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('AddEqual')
         self.step()
         return AddAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_subtract_assignment(self) -> SubtractAssignmentNode:
+    def _parse_subtract_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> SubtractAssignmentNode:
         """Parses a subtraction assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('SubtractEqual')
         self.step()
         return SubtractAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_multiply_assignment(self) -> MultiplyAssignmentNode:
+    def _parse_multiply_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> MultiplyAssignmentNode:
         """Parses a multiplication assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('MultiplyEqual')
         self.step()
         return MultiplyAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_divide_assignment(self) -> DivideAssignmentNode:
+    def _parse_divide_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> DivideAssignmentNode:
         """Parses a division assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('DivideEqual')
         self.step()
         return DivideAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_modulus_assignment(self) -> ModulusAssignmentNode:
+    def _parse_modulus_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> ModulusAssignmentNode:
         """Parses a modulus assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('ModulusEqual')
         self.step()
         return ModulusAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
             ),
         )
 
-    def _parse_power_assignment(self) -> PowerAssignmentNode:
+    def _parse_power_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> PowerAssignmentNode:
         """Parses a power assignment."""
-        variables = self._dot_separated_items(self._parse_identifier)
         self.expect('PowerEqual')
         self.step()
         return PowerAssignmentNode(
-            variables=variables,
+            references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
                 ('Expression',),
@@ -1002,49 +1029,15 @@ class FarrParser(Parser):
             expression=self._process_expression(),
         )
 
-    def _process_statement(self) -> Optional[StatementNode]:
-        """Processes a statement."""
+    def _process_expression_or_statement(
+        self,
+    ) -> Optional[Union[ExpressionNode, StatementNode]]:
+        """Processes either an expression or a statement."""
         if self.check('Use'):
             return self._followed_by_semicolon(self._parse_use)  # type: ignore[return-value]
         elif self.check('Variable'):
             return self._followed_by_semicolon(  # type: ignore[return-value]
                 self._parse_variable_declaration
-            )
-        elif self._look_until(('Equal',), ('Identifier', 'Symbol', 'Dot')):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_assignment
-            )
-        elif self._look_until(('AddEqual',), ('Identifier', 'Symbol', 'Dot')):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_add_assignment
-            )
-        elif self._look_until(
-            ('SubtractEqual',), ('Identifier', 'Symbol', 'Dot')
-        ):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_subtract_assignment
-            )
-        elif self._look_until(
-            ('MultiplyEqual',), ('Identifier', 'Symbol', 'Dot')
-        ):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_multiply_assignment
-            )
-        elif self._look_until(
-            ('DivideEqual',), ('Identifier', 'Symbol', 'Dot')
-        ):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_divide_assignment
-            )
-        elif self._look_until(
-            ('ModulusEqual',), ('Identifier', 'Symbol', 'Dot')
-        ):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_modulus_assignment
-            )
-        elif self._look_until(('PowerEqual',), ('Identifier', 'Symbol', 'Dot')):
-            return self._followed_by_semicolon(  # type: ignore[return-value]
-                self._parse_power_assignment
             )
         elif self.check('While'):
             return self._parse_while()
@@ -1070,15 +1063,86 @@ class FarrParser(Parser):
             return self._parse_struct()
         elif self.check('Return'):
             return self._followed_by_semicolon(self._parse_return)  # type: ignore[return-value]
-        return None
-
-    def _process_expression_or_statement(
-        self,
-    ) -> Optional[Union[ExpressionNode, StatementNode]]:
-        """Processes either an expression or a statement."""
-        return self._process_statement() or self._followed_by_semicolon(
-            self._process_expression
-        )
+        elif (
+            expression := self._process_expression()
+        ) is not None and self.check('Equal'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('AddEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_add_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('SubtractEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_subtract_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('MultiplyEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_multiply_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('DivideEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_divide_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('ModulusEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_modulus_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('PowerEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_power_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        return self._followed_by_semicolon(lambda: expression)
 
     def parse(self, tokens_state: List[TokenState]) -> ModuleNode:
         """Parses the whole module and returns the root AST node."""
