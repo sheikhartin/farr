@@ -194,7 +194,7 @@ class VariableDeclarationNode(StatementNode):
 
 @dataclass
 class AssignmentNode(StatementNode):
-    variables: ItemizedExpressionNode = field(kw_only=True)
+    references: ItemizedExpressionNode = field(kw_only=True)
     expression: ExpressionNode = field(kw_only=True)
 
 

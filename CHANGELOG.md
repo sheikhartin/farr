@@ -1,3 +1,7 @@
+### [1.2.0](https://github.com/sheikhartin/farr/releases/tag/1.2.0)
+
+Providing the ability to use all types of assignments even in chained form without any intermediate method...
+
 ### [1.1.0](https://github.com/sheikhartin/farr/releases/tag/1.1.0)
 
 For better debugging, we will use a [linter](https://github.com/astral-sh/ruff).

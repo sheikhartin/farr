@@ -1,0 +1,18 @@
+/**
+ * Sorts the elements of a given list using the bubble sort algorithm.
+ *
+ * @param list - The input list to be sorted.
+ */
+fn bubble_sort(let list) = {
+  let length = list.length;
+  for let i in [1..length] = {
+    for let j in [1..- length i] = {
+      if list.[j] > list.[+ j 1] = {
+        let tmp = list.[j];
+        list.[j] = list.[+ j 1];
+        list.[+ j 1] = tmp;
+      }
+    }
+  }
+  return! list;
+}
