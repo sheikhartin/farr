@@ -331,7 +331,7 @@ class FarrInterpreter(Interpreter):
             self.environment.assign(param.identifier.value, arg)
         for kwarg in kwargs:
             if not self.environment.exists(
-                name := kwarg.variables.items.copy().pop().value, 0
+                name := kwarg.references.items.copy().pop().value, 0
             ):
                 raise NameError(f'There is no parameter name `{name}`!')
             self.environment.assign(name, kwarg.expression)
@@ -354,7 +354,7 @@ class FarrInterpreter(Interpreter):
         kwargs = list(
             map(
                 lambda x: AssignmentNode(
-                    variables=x.variables,
+                    references=x.references,
                     expression=self._interpret(x.expression),
                 ),
                 kwargs,
@@ -412,7 +412,7 @@ class FarrInterpreter(Interpreter):
             **dict(
                 map(
                     lambda x: (
-                        x.variables.items.copy().pop(0).value,
+                        x.references.items.copy().pop(0).value,
                         self._interpret(x.expression),
                     ),
                     kwargs,
@@ -709,7 +709,7 @@ class FarrInterpreter(Interpreter):
 
     def _interpret_assignment_node(self, node: AssignmentNode) -> None:
         """Updates the content of a variable."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value, self._interpret(node.expression)  # type: ignore[union-attr]
@@ -717,14 +717,21 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] = self._interpret(node.expression)
+            return None
         pointer.environment.replace(
             target.value, self._interpret(node.expression)  # type: ignore[union-attr]
         )
 
     def _interpret_add_assignment_node(self, node: AddAssignmentNode) -> None:
         """Adds something to the previous value."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -734,9 +741,18 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] += self._interpret(node.expression)
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) + self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            + self._interpret(node.expression),
         )
 
     def _interpret_subtract_assignment_node(
@@ -744,7 +760,7 @@ class FarrInterpreter(Interpreter):
         node: SubtractAssignmentNode,
     ) -> None:
         """Subtracts something from the previous value."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -754,9 +770,18 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] -= self._interpret(node.expression)
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) - self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            - self._interpret(node.expression),
         )
 
     def _interpret_multiply_assignment_node(
@@ -764,7 +789,7 @@ class FarrInterpreter(Interpreter):
         node: MultiplyAssignmentNode,
     ) -> None:
         """Multiplies something by the previous value."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -774,9 +799,18 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] *= self._interpret(node.expression)
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) * self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            * self._interpret(node.expression),
         )
 
     def _interpret_divide_assignment_node(
@@ -784,7 +818,7 @@ class FarrInterpreter(Interpreter):
         node: DivideAssignmentNode,
     ) -> None:
         """Divides something by the previous value."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -794,9 +828,18 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] /= self._interpret(node.expression)
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) / self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            / self._interpret(node.expression),
         )
 
     def _interpret_modulus_assignment_node(
@@ -804,7 +847,7 @@ class FarrInterpreter(Interpreter):
         node: ModulusAssignmentNode,
     ) -> None:
         """Calculates the remainder of dividing the previous value by something."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -814,9 +857,18 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] %= self._interpret(node.expression)
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) % self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            % self._interpret(node.expression),
         )
 
     def _interpret_power_assignment_node(
@@ -824,7 +876,7 @@ class FarrInterpreter(Interpreter):
         node: PowerAssignmentNode,
     ) -> None:
         """Raises the previous value to the power of something."""
-        *pointers, target = node.variables.items
+        *pointers, target = node.references.items
         if not pointers:
             self.environment.replace(
                 target.value,  # type: ignore[union-attr]
@@ -834,9 +886,20 @@ class FarrInterpreter(Interpreter):
             return None
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] **= self._interpret(
+                node.expression
+            )
+            return None
         pointer.environment.replace(
-            target.value, pointer.environment.locate(target.value) ** self._interpret(node.expression)  # type: ignore[union-attr]
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            ** self._interpret(node.expression),
         )
 
     def _interpret_while_node(self, node: WhileNode) -> None:

@@ -478,6 +478,24 @@ class ListObject(DataStructureObject):
             )
         )
 
+    def __setitem__(
+        self,
+        key: 'RangeObject',
+        value: FarrObject,
+    ) -> None:
+        """Updates the elements based on the given range."""
+        if key.from_.value <= 0 or key.by is not None and key.by.value <= 0:  # type: ignore[union-attr]
+            raise IndexError('Non-positive indexes are not allowed!')
+        elif key.to is None and key.by is None:
+            self.elements[key.from_.value - 1] = value  # type: ignore[union-attr]
+            return None
+        self.elements[  # type: ignore[call-overload]
+            key.from_.value  # type: ignore[union-attr]
+            - 1 : key.to.value if key.to is not None else None : (
+                key.by.value if key.by is not None else None
+            )
+        ] = value
+
     def __iter__(self) -> 'ListObject':
         """Iterates the elements in the list."""
         self._index = 0
