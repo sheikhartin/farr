@@ -23,9 +23,9 @@ for let i in [1..rounds] = {
   if user_move == computer_move = {
     println("It's a tie!");
   } else if (
-    (user_move == "r" && computer_move == "s") ||
-    (user_move == "p" && computer_move == "r") ||
-    (user_move == "s" && computer_move == "p")
+    ((user_move == "r") && (computer_move == "s")) ||
+    ((user_move == "p") && (computer_move == "r")) ||
+    ((user_move == "s") && (computer_move == "p"))
   ) = {
     println("Unfortunately, you won!");
   } else = {
