@@ -33,11 +33,11 @@ if rng_start >= rng_end = {
 }
 
 for let i in [rng_start..rng_end] = {
-  if % i 15 == 0 = {
+  if ((% i 15) == 0) = {
     println("...Fizzbuzz");
-  } else if % i 3 == 0 = {
+  } else if ((% i 3) == 0) = {
     println("...Fizz");
-  } else if % i 5 == 0 = {
+  } else if ((% i 5) == 0) = {
     println("...Buzz");
   } else = {
     println("${i}"); // Or just pass `i` as an argument!
