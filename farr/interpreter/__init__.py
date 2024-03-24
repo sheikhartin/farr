@@ -459,7 +459,19 @@ class FarrInterpreter(Interpreter):
             return result
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[target] = (
+                result := (
+                    pointer[target := self._interpret(target)]
+                    + IntegerObject(value=1)
+                )
+            )
+            return result
         pointer.environment.replace(
             target.value,
             result := pointer.environment.locate(target.value)
@@ -482,7 +494,19 @@ class FarrInterpreter(Interpreter):
             return result
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[target] = (
+                result := (
+                    pointer[target := self._interpret(target)]
+                    - IntegerObject(value=1)
+                )
+            )
+            return result
         pointer.environment.replace(
             target.value,
             result := pointer.environment.locate(target.value)
@@ -505,7 +529,16 @@ class FarrInterpreter(Interpreter):
             return result
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[target] = (
+                result := pointer[target := self._interpret(target)]
+            ) + IntegerObject(value=1)
+            return result
         pointer.environment.replace(
             target.value,
             (result := pointer.environment.locate(target.value))
@@ -528,7 +561,16 @@ class FarrInterpreter(Interpreter):
             return result
         pointer = self._interpret(pointers.pop(0))
         while pointers:
-            pointer = getattr(pointer, pointers.pop(0).value)  # type: ignore[union-attr]
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[target] = (
+                result := pointer[target := self._interpret(target)]
+            ) - IntegerObject(value=1)
+            return result
         pointer.environment.replace(
             target.value,
             (result := pointer.environment.locate(target.value))
