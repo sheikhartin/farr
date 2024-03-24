@@ -4,7 +4,6 @@
 # https://github.com/sheikhartin/farr
 
 from functools import partial
-from itertools import takewhile
 from typing import Optional, Union, Callable, List, Tuple
 
 from farr.helpers import partition_a_sequence, normalize_identifier
@@ -65,26 +64,6 @@ from farr.parser.nodes import (
 
 
 class FarrParser(Parser):
-    def _look_until(
-        self,
-        retreat: Tuple[str, ...],
-        tokens: Tuple[str, ...],
-    ) -> Optional[bool]:
-        """Checks that all remaining tokens are acceptable."""
-        return all(
-            map(
-                lambda x: x.name in tokens,  # type: ignore[union-attr]
-                takewhile(
-                    lambda x: x.name not in retreat if x is not None else None,  # type: ignore[union-attr]
-                    [
-                        self._current_token,
-                        self._next_token,
-                        *self._tokens_state,
-                    ],
-                ),
-            )
-        )
-
     def _except_current_and_next_at(
         self,
         index: int,
@@ -323,7 +302,14 @@ class FarrParser(Parser):
             row=operator.row,  # type: ignore[attr-defined]
             column=operator.column,  # type: ignore[attr-defined]
             operator=None,
-            operand=self._dot_separated_items(self._parse_identifier),  # type: ignore[attr-defined]
+            operand=(
+                expression.expressions
+                if isinstance(
+                    expression := self._process_expression(),
+                    ChainedExpressionsNode,
+                )
+                else ItemizedExpressionNode(items=[expression])
+            ),
         )
 
     def _parse_pre_decrement(self) -> PreDecrementNode:
@@ -335,33 +321,14 @@ class FarrParser(Parser):
             row=operator.row,  # type: ignore[attr-defined]
             column=operator.column,  # type: ignore[attr-defined]
             operator=None,
-            operand=self._dot_separated_items(self._parse_identifier),
-        )
-
-    def _parse_post_increment(self) -> PostIncrementNode:
-        """Parses a post-increment operation."""
-        operand = self._dot_separated_items(self._parse_identifier)
-        self.expect('Increment')
-        operator = self._current_token
-        self.step()
-        return PostIncrementNode(
-            row=operator.row,  # type: ignore[attr-defined]
-            column=operator.column,  # type: ignore[attr-defined]
-            operator=None,
-            operand=operand,
-        )
-
-    def _parse_post_decrement(self) -> PostDecrementNode:
-        """Parses a post-decrement operation."""
-        operand = self._dot_separated_items(self._parse_identifier)
-        self.expect('Decrement')
-        operator = self._current_token
-        self.step()
-        return PostDecrementNode(
-            row=operator.row,  # type: ignore[attr-defined]
-            column=operator.column,  # type: ignore[attr-defined]
-            operator=None,
-            operand=operand,
+            operand=(
+                expression.expressions
+                if isinstance(
+                    expression := self._process_expression(),
+                    ChainedExpressionsNode,
+                )
+                else ItemizedExpressionNode(items=[expression])
+            ),
         )
 
     def _parse_list(self) -> ListNode:
@@ -417,13 +384,13 @@ class FarrParser(Parser):
 
     def _parse_range(self) -> RangeNode:
         """Parses a range expression."""
-        from_ = self._validate(self._process_term, ('Term',))
+        from_ = self._validate(self._process_expression, ('Expression',))
         if (by := None) or self.check('Comma'):
             self.step()
-            by = self._validate(self._process_term, ('Term',))
+            by = self._validate(self._process_expression, ('Expression',))
         if (to := None) or self.check('Between'):
             self.step()
-            to = self._validate(self._process_term, ('Term',))
+            to = self._validate(self._process_expression, ('Expression',))
         return RangeNode(from_=from_, to=to, by=by)  # type: ignore[arg-type]
 
     def _parse_arithmetic_operation(self) -> ArithmeticOperationNode:
@@ -436,17 +403,17 @@ class FarrParser(Parser):
             column=operator.column,  # type: ignore[attr-defined]
             operator=operator.name,  # type: ignore[attr-defined]
             left=self._validate(  # type: ignore[arg-type]
-                self._process_term,
-                ('Term',),
+                self._process_expression,
+                ('Expression',),
             ),
             right=self._validate(  # type: ignore[arg-type]
-                self._process_term,
-                ('Term',),
+                self._process_expression,
+                ('Expression',),
             ),
         )
 
     def _parse_keyword_assignment(self) -> AssignmentNode:
-        """"""
+        """Assigns to an optional parameter when calling."""
         references = self._dot_separated_items(self._parse_identifier)
         self.expect('Equal')
         self.step()
@@ -536,10 +503,6 @@ class FarrParser(Parser):
             return self._parse_pre_increment()
         elif self.check('Decrement'):
             return self._parse_pre_decrement()
-        elif self._look_until(('Increment',), ('Identifier', 'Symbol', 'Dot')):
-            return self._parse_post_increment()
-        elif self._look_until(('Decrement',), ('Identifier', 'Symbol', 'Dot')):
-            return self._parse_post_decrement()
         elif (factor := self._process_factor()) is None:
             if self.check('Not'):
                 return self._parse_negation_operation()
@@ -574,61 +537,90 @@ class FarrParser(Parser):
 
     def _process_expression(self) -> Optional[ExpressionNode]:
         """Processes an expression."""
-        if (left := self._process_term()) is not None:
-            while self.check(
-                'EqualEqual',
-                'NotEqual',
-                'GreaterThan',
-                'LessThan',
-                'GreaterThanOrEqual',
-                'LessThanOrEqual',
-            ):
-                operator = self._current_token
-                self.step()
-                left = RelationalOperationNode(
-                    row=operator.row,  # type: ignore[attr-defined]
-                    column=operator.column,  # type: ignore[attr-defined]
-                    operator=operator.name,  # type: ignore[attr-defined]
-                    left=left,
-                    right=self._validate(  # type: ignore[arg-type]
-                        self._process_term,
-                        ('Term',),
-                    ),
-                )
-            while self.check('And', 'Or'):
-                operator = self._current_token
-                self.step()
-                left = LogicalOperationNode(
-                    row=operator.row,  # type: ignore[attr-defined]
-                    column=operator.column,  # type: ignore[attr-defined]
-                    operator=operator.name,  # type: ignore[attr-defined]
-                    left=left,
-                    right=self._validate(  # type: ignore[arg-type]
-                        self._process_expression,
-                        ('Expression',),
-                    ),
-                )
-            while self.check('If'):
-                if_ = self._current_token
-                self.step()
-                condition = self._validate(
+        if (left := self._process_term()) is None:
+            return None
+
+        if self.check(
+            'EqualEqual',
+            'NotEqual',
+            'GreaterThan',
+            'LessThan',
+            'GreaterThanOrEqual',
+            'LessThanOrEqual',
+        ):
+            operator = self._current_token
+            self.step()
+            left = RelationalOperationNode(
+                row=operator.row,  # type: ignore[attr-defined]
+                column=operator.column,  # type: ignore[attr-defined]
+                operator=operator.name,  # type: ignore[attr-defined]
+                left=left,
+                right=self._validate(  # type: ignore[arg-type]
                     self._process_expression,
                     ('Expression',),
-                )
-                self.expect('Else')
-                self.step()
-                left = TernaryOperationNode(
-                    row=if_.row,  # type: ignore[attr-defined]
-                    column=if_.column,  # type: ignore[attr-defined]
-                    then=left,
-                    condition=condition,  # type: ignore[arg-type]
-                    orelse=self._validate(  # type: ignore[arg-type]
-                        self._process_expression,
-                        ('Expression',),
-                    ),
-                )
-            return left
-        return None
+                ),
+            )
+        if self.check('And', 'Or'):
+            operator = self._current_token
+            self.step()
+            left = LogicalOperationNode(
+                row=operator.row,  # type: ignore[attr-defined]
+                column=operator.column,  # type: ignore[attr-defined]
+                operator=operator.name,  # type: ignore[attr-defined]
+                left=left,
+                right=self._validate(  # type: ignore[arg-type]
+                    self._process_expression,
+                    ('Expression',),
+                ),
+            )
+
+        if self.check('Increment'):
+            operator = self._current_token
+            self.step()
+            left = PostIncrementNode(
+                row=operator.row,  # type: ignore[attr-defined]
+                column=operator.column,  # type: ignore[attr-defined]
+                operator=None,
+                operand=(
+                    left.expressions
+                    if isinstance(left, ChainedExpressionsNode)
+                    else ItemizedExpressionNode(items=[left])
+                ),
+            )
+        elif self.check('Decrement'):
+            operator = self._current_token
+            self.step()
+            left = PostDecrementNode(
+                row=operator.row,  # type: ignore[attr-defined]
+                column=operator.column,  # type: ignore[attr-defined]
+                operator=None,
+                operand=(
+                    left.expressions
+                    if isinstance(left, ChainedExpressionsNode)
+                    else ItemizedExpressionNode(items=[left])
+                ),
+            )
+
+        if self.check('If'):
+            if_ = self._current_token
+            self.step()
+            condition = self._validate(
+                self._process_expression,
+                ('Expression',),
+            )
+            self.expect('Else')
+            self.step()
+            left = TernaryOperationNode(
+                row=if_.row,  # type: ignore[attr-defined]
+                column=if_.column,  # type: ignore[attr-defined]
+                then=left,
+                condition=condition,  # type: ignore[arg-type]
+                orelse=self._validate(  # type: ignore[arg-type]
+                    self._process_expression,
+                    ('Expression',),
+                ),
+            )
+        return left
 
     def _parse_use(self) -> UseNode:
         """Parses an use statement."""
@@ -823,7 +815,7 @@ class FarrParser(Parser):
         )
         self.expect('In')
         self.step()
-        condition = self._validate(self._process_term, ('Term',))
+        condition = self._validate(self._process_expression, ('Expression',))
         body = self._parse_block(self._process_expression_or_statement)
         if (orelse := None) or self.check('Else'):
             self.step()
