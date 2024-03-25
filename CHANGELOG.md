@@ -1,3 +1,12 @@
+### [1.3.1](https://github.com/sheikhartin/farr/releases/tag/1.3.1)
+
+Adding the `functools` module to our native libraries with these useful functions:
+
+- `all`
+- `any`
+- `map`
+- `partial`
+
 ### [1.3.0](https://github.com/sheikhartin/farr/releases/tag/1.3.0)
 
 Smarter prefix and postfix operations; and a huge improvement in tests...
