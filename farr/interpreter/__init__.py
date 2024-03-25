@@ -29,6 +29,9 @@ from farr.parser.nodes import (
     BlockNode,
     PassNode,
     NullNode,
+    BinaryNode,
+    OctalNode,
+    HexadecimalNode,
     IntegerNode,
     FloatNode,
     StringNode,
@@ -53,6 +56,8 @@ from farr.parser.nodes import (
     UseNode,
     VariableDeclarationNode,
     AssignmentNode,
+    LeftShiftAssignmentNode,
+    RightShiftAssignmentNode,
     AddAssignmentNode,
     SubtractAssignmentNode,
     MultiplyAssignmentNode,
@@ -170,6 +175,21 @@ class FarrInterpreter(Interpreter):
     def _interpret_null_node(self, node: NullNode) -> NullObject:
         """Returns a `NullObject`."""
         return NullObject()
+
+    def _interpret_binary_node(self, node: BinaryNode) -> IntegerObject:
+        """Converts a `BinaryNode` to a `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 2))
+
+    def _interpret_octal_node(self, node: OctalNode) -> IntegerObject:
+        """Converts an `OctalNode` to an `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 8))
+
+    def _interpret_hexadecimal_node(
+        self,
+        node: HexadecimalNode,
+    ) -> IntegerObject:
+        """Converts a `HexadecimalNode` to a `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 16))
 
     def _interpret_integer_node(self, node: IntegerNode) -> IntegerObject:
         """Converts an `IntegerNode` to an `IntegerObject`."""
@@ -587,6 +607,10 @@ class FarrInterpreter(Interpreter):
         right = self._interpret(node.right)
 
         match node.operator:
+            case 'LeftShift':
+                return left << right
+            case 'RightShift':
+                return left >> right
             case 'Add':
                 return left + right
             case 'Subtract':
@@ -769,6 +793,68 @@ class FarrInterpreter(Interpreter):
             return None
         pointer.environment.replace(
             target.value, self._interpret(node.expression)  # type: ignore[union-attr]
+        )
+
+    def _interpret_left_shift_assignment_node(
+        self,
+        node: LeftShiftAssignmentNode,
+    ) -> None:
+        """Performs a left shift assignment on the target variable."""
+        *pointers, target = node.references.items
+        if not pointers:
+            self.environment.replace(
+                target.value,  # type: ignore[union-attr]
+                self.environment.locate(target.value)  # type: ignore[union-attr]
+                << self._interpret(node.expression),
+            )
+            return None
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] <<= self._interpret(
+                node.expression
+            )
+            return None
+        pointer.environment.replace(
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            << self._interpret(node.expression),
+        )
+
+    def _interpret_right_shift_assignment_node(
+        self,
+        node: RightShiftAssignmentNode,
+    ) -> None:
+        """Performs a right shift assignment on the target variable."""
+        *pointers, target = node.references.items
+        if not pointers:
+            self.environment.replace(
+                target.value,  # type: ignore[union-attr]
+                self.environment.locate(target.value)  # type: ignore[union-attr]
+                >> self._interpret(node.expression),
+            )
+            return None
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] >>= self._interpret(
+                node.expression
+            )
+            return None
+        pointer.environment.replace(
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            >> self._interpret(node.expression),
         )
 
     def _interpret_add_assignment_node(self, node: AddAssignmentNode) -> None:
