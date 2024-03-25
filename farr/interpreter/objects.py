@@ -571,11 +571,20 @@ class ListObject(DataStructureObject):
 
     def reverse(self) -> 'ListObject':
         """Returns the reversed list."""
-        return ListObject(elements=sorted(self.elements, reverse=True))  # type: ignore[type-var]
+        return ListObject(elements=list(reversed(self.elements)))  # type: ignore[type-var]
 
     def ireverse_e(self) -> 'ListObject':
         """Reverses the list and returns the new state."""
-        self.elements = sorted(self.elements, reverse=True)  # type: ignore[type-var]
+        self.elements = list(reversed(self.elements))  # type: ignore[type-var]
+        return self
+
+    def sort(self) -> 'ListObject':
+        """Returns the reversed list."""
+        return ListObject(elements=sorted(self.elements))  # type: ignore[type-var]
+
+    def isort_e(self) -> 'ListObject':
+        """Reverses the list and returns the new state."""
+        self.elements = sorted(self.elements)  # type: ignore[type-var]
         return self
 
     def shuffle(self) -> 'ListObject':
