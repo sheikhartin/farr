@@ -1,0 +1,78 @@
+/**
+ * Checks if all elements in the list are truthy.
+ *
+ * @param list - The list to check.
+ */
+fn all(let list) = {
+  for let i in list = {
+    if ! i = {
+      return! false;
+    }
+  }
+  return! true;
+}
+
+/**
+ * Checks if any element in the list is truthy.
+ *
+ * @param list - The list to check.
+ */
+fn any(let list) = {
+  for let i in list = {
+    if i = {
+      return! true;
+    }
+  }
+  return! false;
+}
+
+/**
+ * Applies a function to each item in the object and collects the results.
+ *
+ * @param func - The function to apply.
+ * @param object - The object to iterate over.
+ */
+fn map(let func, let object) = {
+  let result = {};
+  for let i in object = {
+    result.iappend!(func(i));
+  }
+  return! result;
+}
+
+/**
+ * Represents a partially applied function.
+ *
+ * @attr func - The function to be partially applied.
+ * @attr arg - The single argument to be applied to the function.
+ */
+struct Partial = {
+  let func,
+  let arg
+}
+
+/**
+ * Converts the partial application to a string representation.
+ */
+fn Partial::tostring() = {
+  return! "${func}(${arg})";
+}
+
+/**
+ * Invokes the partial application.
+ */
+fn Partial::invoke() = {
+  // The language currently does not support argument unpacking, which means
+  // functions are limited to a single argument.
+  return! func(arg);
+}
+
+/**
+ * Creates a new partial application of the given function.
+ *
+ * @param func - The function to partially apply.
+ * @param arg - The arguments to apply.
+ */
+fn partial(let func, let arg) = {
+  return! Partial(func, arg);
+}
