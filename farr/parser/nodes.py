@@ -43,6 +43,18 @@ class HeterogeneousLiteralNode(PositionedNode, ExpressionNode):
     value: str = field(kw_only=True)
 
 
+class BinaryNode(HeterogeneousLiteralNode):
+    pass
+
+
+class OctalNode(HeterogeneousLiteralNode):
+    pass
+
+
+class HexadecimalNode(HeterogeneousLiteralNode):
+    pass
+
+
 class IntegerNode(HeterogeneousLiteralNode):
     pass
 
@@ -199,6 +211,14 @@ class AssignmentNode(StatementNode):
 
 
 class AggregateAssignmentNode(AssignmentNode):
+    pass
+
+
+class LeftShiftAssignmentNode(AggregateAssignmentNode):
+    pass
+
+
+class RightShiftAssignmentNode(AggregateAssignmentNode):
     pass
 
 
