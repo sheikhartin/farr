@@ -79,7 +79,8 @@ def test_definitions_and_manipulations_interpretation(
                     fn add_one(let x) = {
                       return! + x 1;
                     }
-                    println(add_one(9));
+                    println(add_one(x=9));
+                    println(add_one(9)); // The answer should be the same as above, but...
 
                     fn add_one(let x = 5) = { // It will replace the previous function...
                       println(+ x 1);
@@ -119,6 +120,8 @@ def test_definitions_and_manipulations_interpretation(
         1.0
         2.0
         1.0
+        10
+        null
         6
         null
         6
