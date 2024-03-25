@@ -16,6 +16,9 @@ from farr.parser.nodes import (
     PassNode,
     NullNode,
     HeterogeneousLiteralNode,
+    BinaryNode,
+    OctalNode,
+    HexadecimalNode,
     IntegerNode,
     FloatNode,
     StringNode,
@@ -41,6 +44,8 @@ from farr.parser.nodes import (
     UseNode,
     VariableDeclarationNode,
     AssignmentNode,
+    LeftShiftAssignmentNode,
+    RightShiftAssignmentNode,
     AddAssignmentNode,
     SubtractAssignmentNode,
     MultiplyAssignmentNode,
@@ -216,6 +221,39 @@ class FarrParser(Parser):
         self.step()
         return null
 
+    def _parse_binary(self) -> BinaryNode:
+        """Parses a binary value."""
+        self.expect('Binary')
+        binary = BinaryNode(
+            row=self._current_token.row,  # type: ignore[attr-defined]
+            column=self._current_token.column,  # type: ignore[attr-defined]
+            value=self._current_token.value,  # type: ignore[attr-defined]
+        )
+        self.step()
+        return binary
+
+    def _parse_octal(self) -> OctalNode:
+        """Parses an octal value."""
+        self.expect('Octal')
+        octal = OctalNode(
+            row=self._current_token.row,  # type: ignore[attr-defined]
+            column=self._current_token.column,  # type: ignore[attr-defined]
+            value=self._current_token.value,  # type: ignore[attr-defined]
+        )
+        self.step()
+        return octal
+
+    def _parse_hexadecimal(self) -> HexadecimalNode:
+        """Parses a hexadecimal value."""
+        self.expect('Hexadecimal')
+        hexadecimal = HexadecimalNode(
+            row=self._current_token.row,  # type: ignore[attr-defined]
+            column=self._current_token.column,  # type: ignore[attr-defined]
+            value=self._current_token.value,  # type: ignore[attr-defined]
+        )
+        self.step()
+        return hexadecimal
+
     def _parse_integer(self) -> IntegerNode:
         """Parses an integer token."""
         self.expect('Integer')
@@ -268,6 +306,12 @@ class FarrParser(Parser):
             return self._parse_pass()
         elif self.check('Null'):
             return self._parse_null()
+        elif self.check('Binary'):
+            return self._parse_binary()
+        elif self.check('Octal'):
+            return self._parse_octal()
+        elif self.check('Hexadecimal'):
+            return self._parse_hexadecimal()
         elif self.check('Integer'):
             return self._parse_integer()
         elif self.check('Float'):
@@ -395,7 +439,16 @@ class FarrParser(Parser):
 
     def _parse_arithmetic_operation(self) -> ArithmeticOperationNode:
         """Parses an arithmetic operation."""
-        self.expect('Add', 'Subtract', 'Multiply', 'Divide', 'Modulus', 'Power')
+        self.expect(
+            'LeftShift',
+            'RightShift',
+            'Add',
+            'Subtract',
+            'Multiply',
+            'Divide',
+            'Modulus',
+            'Power',
+        )
         operator = self._current_token
         self.step()
         return ArithmeticOperationNode(
@@ -524,7 +577,14 @@ class FarrParser(Parser):
             elif self.check('LeftBracket'):
                 return self._bracketed(self._parse_range)  # type: ignore[return-value]
             elif self.check(
-                'Add', 'Subtract', 'Multiply', 'Divide', 'Modulus', 'Power'
+                'LeftShift',
+                'RightShift',
+                'Add',
+                'Subtract',
+                'Multiply',
+                'Divide',
+                'Modulus',
+                'Power',
             ):
                 return self._parse_arithmetic_operation()
         elif isinstance(factor, HeterogeneousLiteralNode):
@@ -655,6 +715,36 @@ class FarrParser(Parser):
         self.expect('Equal')
         self.step()
         return AssignmentNode(
+            references=references,
+            expression=self._validate(  # type: ignore[arg-type]
+                self._process_expression,
+                ('Expression',),
+            ),
+        )
+
+    def _parse_left_shift_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> LeftShiftAssignmentNode:
+        """Parses a left shift assignment."""
+        self.expect('LeftShiftEqual')
+        self.step()
+        return LeftShiftAssignmentNode(
+            references=references,
+            expression=self._validate(  # type: ignore[arg-type]
+                self._process_expression,
+                ('Expression',),
+            ),
+        )
+
+    def _parse_right_shift_assignment(
+        self,
+        references: ItemizedExpressionNode,
+    ) -> RightShiftAssignmentNode:
+        """Parses a right shift assignment."""
+        self.expect('RightShiftEqual')
+        self.step()
+        return RightShiftAssignmentNode(
             references=references,
             expression=self._validate(  # type: ignore[arg-type]
                 self._process_expression,
@@ -1061,6 +1151,28 @@ class FarrParser(Parser):
             return self._followed_by_semicolon(
                 partial(
                     self._parse_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('LeftShiftEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_left_shift_assignment,
+                    references=(
+                        expression.expressions
+                        if isinstance(expression, ChainedExpressionsNode)
+                        else ItemizedExpressionNode(items=[expression])
+                    ),
+                )
+            )
+        elif expression is not None and self.check('RightShiftEqual'):
+            return self._followed_by_semicolon(
+                partial(
+                    self._parse_right_shift_assignment,
                     references=(
                         expression.expressions
                         if isinstance(expression, ChainedExpressionsNode)
