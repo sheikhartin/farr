@@ -579,11 +579,11 @@ class ListObject(DataStructureObject):
         return self
 
     def sort(self) -> 'ListObject':
-        """Returns the reversed list."""
+        """Returns the sorted list."""
         return ListObject(elements=sorted(self.elements))  # type: ignore[type-var]
 
     def isort_e(self) -> 'ListObject':
-        """Reverses the list and returns the new state."""
+        """Sorts the list in its own place."""
         self.elements = sorted(self.elements)  # type: ignore[type-var]
         return self
 
