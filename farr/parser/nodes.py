@@ -116,6 +116,11 @@ class PairNode(DataStructureNode):
 
 
 @dataclass
+class ExpandableArgumentNode(ExpressionNode):
+    expression: ListNode = field(kw_only=True)
+
+
+@dataclass
 class CallNode(ExpressionNode):
     invoke: IdentifierNode = field(kw_only=True)
     args: ItemizedExpressionNode = field(kw_only=True)
@@ -202,6 +207,10 @@ class UseNode(StatementNode):
 class VariableDeclarationNode(StatementNode):
     identifier: IdentifierNode = field(kw_only=True)
     expression: Optional[ExpressionNode] = field(kw_only=True)
+
+
+class VariadicParameterDeclarationNode(VariableDeclarationNode):
+    pass
 
 
 @dataclass

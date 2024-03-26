@@ -29,6 +29,7 @@ from farr.parser.nodes import (
     ListNode,
     HashMapNode,
     PairNode,
+    ExpandableArgumentNode,
     CallNode,
     GroupedExpressionNode,
     NegationOperationNode,
@@ -43,6 +44,7 @@ from farr.parser.nodes import (
     StatementNode,
     UseNode,
     VariableDeclarationNode,
+    VariadicParameterDeclarationNode,
     AssignmentNode,
     LeftShiftAssignmentNode,
     RightShiftAssignmentNode,
@@ -478,6 +480,14 @@ class FarrParser(Parser):
             ),
         )
 
+    def _parse_expandable_argument(self) -> ExpandableArgumentNode:
+        """Parses an expandable argument for calls."""
+        self.expect('Pass')
+        self.step()
+        return ExpandableArgumentNode(
+            expression=self._validate(self._process_expression, ('Expression',))  # type: ignore[arg-type]
+        )
+
     def _resolve_call_argument(
         self,
     ) -> Optional[Union[ExpressionNode, AssignmentNode]]:
@@ -485,7 +495,12 @@ class FarrParser(Parser):
         return (
             self._parse_keyword_assignment()
             if self.check('Identifier', 'Symbol') and self.peek('Equal')
-            else self._process_expression()
+            else (
+                self._parse_expandable_argument()
+                if self.check('Pass')
+                and not self.peek('Comma', 'RightParenthesis')
+                else self._process_expression()
+            )
         )
 
     def _parse_call(self, invoke: IdentifierNode) -> CallNode:
@@ -704,6 +719,24 @@ class FarrParser(Parser):
                 self._process_expression, ('Expression',)
             )
         return VariableDeclarationNode(
+            identifier=identifier, expression=expression
+        )  # type: ignore[arg-type]
+
+    def _parse_variadic_parameter_declaration(
+        self,
+    ) -> VariadicParameterDeclarationNode:
+        """Parses a declaration of a variadic parameter."""
+        self.expect('Variable')
+        self.step()
+        identifier = self._parse_identifier()
+        self.expect('Pass')
+        self.step()
+        if (expression := None) or self.check('Equal'):
+            self.step()
+            expression = self._validate(
+                self._process_expression, ('Expression',)
+            )
+        return VariadicParameterDeclarationNode(
             identifier=identifier, expression=expression
         )  # type: ignore[arg-type]
 
@@ -1030,12 +1063,21 @@ class FarrParser(Parser):
             catch = self._parse_catch()
         return TryNode(body=body, catch=catch)
 
-    def _resolve_parameter(self) -> Optional[VariableDeclarationNode]:
+    def _resolve_parameter(
+        self,
+    ) -> Optional[
+        Union[VariableDeclarationNode, VariadicParameterDeclarationNode]
+    ]:
         """Resolves a parameter declaration."""
         return (
-            self._parse_variable_declaration()
+            self._parse_variadic_parameter_declaration()
             if self.check('Variable')
-            else None
+            and self._except_current_and_next_at(0, ('Pass',))
+            else (
+                self._parse_variable_declaration()
+                if self.check('Variable')
+                else None
+            )
         )
 
     def _parse_function(self) -> FunctionDefinitionNode:
