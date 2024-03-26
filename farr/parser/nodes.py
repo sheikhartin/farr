@@ -43,6 +43,18 @@ class HeterogeneousLiteralNode(PositionedNode, ExpressionNode):
     value: str = field(kw_only=True)
 
 
+class BinaryNode(HeterogeneousLiteralNode):
+    pass
+
+
+class OctalNode(HeterogeneousLiteralNode):
+    pass
+
+
+class HexadecimalNode(HeterogeneousLiteralNode):
+    pass
+
+
 class IntegerNode(HeterogeneousLiteralNode):
     pass
 
@@ -101,6 +113,11 @@ class HashMapNode(DataStructureNode):
 class PairNode(DataStructureNode):
     key: ExpressionNode = field(kw_only=True)
     value: ExpressionNode = field(kw_only=True)
+
+
+@dataclass
+class ExpandableArgumentNode(ExpressionNode):
+    expression: ListNode = field(kw_only=True)
 
 
 @dataclass
@@ -192,6 +209,10 @@ class VariableDeclarationNode(StatementNode):
     expression: Optional[ExpressionNode] = field(kw_only=True)
 
 
+class VariadicParameterDeclarationNode(VariableDeclarationNode):
+    pass
+
+
 @dataclass
 class AssignmentNode(StatementNode):
     references: ItemizedExpressionNode = field(kw_only=True)
@@ -199,6 +220,14 @@ class AssignmentNode(StatementNode):
 
 
 class AggregateAssignmentNode(AssignmentNode):
+    pass
+
+
+class LeftShiftAssignmentNode(AggregateAssignmentNode):
+    pass
+
+
+class RightShiftAssignmentNode(AggregateAssignmentNode):
     pass
 
 

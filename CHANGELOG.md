@@ -1,3 +1,12 @@
+### [1.4.0](https://github.com/sheikhartin/farr/releases/tag/1.4.0)
+
+Enhancements and new features in invocation and operations:
+
+- Added left (`<<`) and right (`>>`) shift operators for binary manipulation.
+- Support for binary, octal, and hexadecimal literals.
+- Enforced keyword-only arguments for optional parameters to prevent reassignment through positional arguments.
+- Enhanced function, struct, and method invocation error handling with improved messages.
+
 ### [1.3.1](https://github.com/sheikhartin/farr/releases/tag/1.3.1)
 
 Adding the `functools` module to our native libraries with these useful functions:
