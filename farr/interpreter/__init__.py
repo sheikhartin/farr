@@ -380,13 +380,10 @@ class FarrInterpreter(Interpreter):
         for param, arg in zip(required.copy(), args_.copy()):
             required.pop(0)
             args_.pop(0)
-            self.environment.assign(
-                param.identifier.value,
-                self._interpret(arg),
-            )
+            self.environment.assign(param.identifier.value, arg)
         if (
             exp_args
-            and (exp_args := self._interpret(exp_args.pop(0).expression))
+            and (exp_args := exp_args.pop(0).expression)
             and variadic
             and not required
         ):
@@ -416,13 +413,13 @@ class FarrInterpreter(Interpreter):
             variadic_ = self.environment.locate(
                 variadic.pop(0).identifier.value
             )
-            variadic_.elements.extend(map(self._interpret, args_))
+            variadic_.elements.extend(args_)
         for kwarg in kwargs:
             if not self.environment.exists(
                 name := kwarg.references.items.copy().pop().value, 0
             ):
                 raise NameError(f'There is no parameter name `{name}`!')
-            self.environment.assign(name, self._interpret(kwarg.expression))
+            self.environment.assign(name, kwarg.expression)
         return None
 
     def _call_non_python_native_object(
@@ -431,6 +428,31 @@ class FarrInterpreter(Interpreter):
         args: ItemizedExpressionNode,
     ) -> FarrObject:
         """Calls native objects of our language."""
+        args_, kwargs = partition_a_sequence(
+            args.items, lambda x: not isinstance(x, AssignmentNode)
+        )
+        args_, exp_args = partition_a_sequence(
+            args_, lambda x: not isinstance(x, ExpandableArgumentNode)
+        )
+        args_ = list(map(self._interpret, args_))
+        exp_args = list(
+            map(
+                lambda x: ExpandableArgumentNode(
+                    expression=self._interpret(x.expression)
+                ),
+                exp_args,
+            )
+        )
+        kwargs = list(
+            map(
+                lambda x: AssignmentNode(
+                    references=x.references,
+                    expression=self._interpret(x.expression),
+                ),
+                kwargs,
+            )
+        )
+
         environment_backup = self.environment
         self.environment = Environment(
             parent=(
@@ -453,7 +475,7 @@ class FarrInterpreter(Interpreter):
                 )
                 else invoke.attributes  # type: ignore[attr-defined]
             ),
-            args,
+            ItemizedExpressionNode(items=sum([args_, exp_args, kwargs], [])),
         )
         try:
             self._interpret(invoke.body)
