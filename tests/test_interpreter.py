@@ -80,7 +80,6 @@ def test_definitions_and_manipulations_interpretation(
                       return! + x 1;
                     }
                     println(add_one(x=9));
-                    println(add_one(9)); // The answer should be the same as above, but...
 
                     fn add_one(let x = 5) = { // It will replace the previous function...
                       println(+ x 1);
@@ -123,12 +122,36 @@ def test_definitions_and_manipulations_interpretation(
         10
         null
         6
-        null
-        6
         StructInstanceObject() John Doe 1997
         StructInstanceObject() Artin Mohammadi 2002
         I think u r 22
         """
+    )
+
+
+@pytest.mark.xfail(raises=SystemExit)
+def test_type_error_on_invocation(
+    farr_regex_lexer_fixture: FarrRegexLexer,
+    farr_parser_fixture: FarrParser,
+    farr_interpreter_fixture: FarrInterpreter,
+) -> None:
+    """Validates proper handling of invalid call arguments."""
+    farr_interpreter_fixture.interpret(
+        farr_parser_fixture.parse(
+            farr_regex_lexer_fixture.tokenize(
+                textwrap.dedent(
+                    """
+                    fn add(let x, let y) = {
+                      return! + x y;
+                    }
+
+                    add();
+                    add(1, y=2);
+                    add(...{1, 2, 3});
+                    """
+                )
+            )
+        )
     )
 
 

@@ -16,16 +16,19 @@ class FarrRegexLexer(RegexLexer):
             ],
         ),
         GroupedTokens(
-            r'[\-\+]?(?:\d+\.(?!\.)\d*|\d*\.(?!\.)\d+|\d+)|'
+            r'0[box]\d+|[\-\+]?(?:\d+\.(?!\.)\d*|\d*\.(?!\.)\d+|\d+)|'
             r'r?"(?:[^"\\]|\\.)*"',
             [
+                Token('Binary', r'0b\d+'),
+                Token('Octal', r'0o\d+'),
+                Token('Hexadecimal', r'0x\d+'),
                 Token('Integer', r'[\-\+]?\d+'),
                 Token('Float', r'[\-\+]?(?:\d+\.(?!\.)\d*|\d*\.(?!\.)\d+)'),
                 Token('String', r'r?"(?:[^"\\]|\\.)*"'),
             ],
         ),
         GroupedTokens(
-            r'[&\|\=\:\+\-]{2}|[\<\>\!\+\-\*/%\^]\=|\.{2,3}|[\s\W]',
+            r'[\<\>]{2}\=|[&\|\=\:\+\-\<\>]{2}|[\<\>\!\+\-\*/%\^]\=|\.{2,3}|[\s\W]',
             [
                 Token('LineBreaker', r'[\n\r]', ignore=True),
                 Token('Indent', r'[\040\t]', ignore=True),
@@ -54,10 +57,14 @@ class FarrRegexLexer(RegexLexer):
                 Token('Equal', r'\='),
                 Token('EqualEqual', r'\={2}'),
                 Token('NotEqual', r'\!\='),
+                Token('LeftShift', r'\<{2}'),
+                Token('RightShift', r'\>{2}'),
                 Token('LessThan', r'\<'),
                 Token('GreaterThan', r'\>'),
                 Token('LessThanOrEqual', r'\<\='),
                 Token('GreaterThanOrEqual', r'\>\='),
+                Token('LeftShiftEqual', r'\<{2}\='),
+                Token('RightShiftEqual', r'\>{2}\='),
                 Token('AddEqual', r'\+\='),
                 Token('SubtractEqual', r'\-\='),
                 Token('MultiplyEqual', r'\*\='),

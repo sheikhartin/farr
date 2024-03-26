@@ -149,6 +149,24 @@ class BooleanObject(HeterogeneousLiteralObject):
 
 
 class IntegerObject(HeterogeneousLiteralObject):
+    def __lshift__(self, other: 'IntegerObject') -> 'IntegerObject':
+        """Performs bitwise left shift."""
+        if not isinstance(other, IntegerObject):
+            raise TypeError(
+                f'Type `{self.__class__.__name__}` does not support '
+                f'operator `<<` with type `{other.__class__.__name__}`!'
+            )
+        return IntegerObject(value=self.value << other.value)
+
+    def __rshift__(self, other: 'IntegerObject') -> 'IntegerObject':
+        """Performs bitwise right shift."""
+        if not isinstance(other, IntegerObject):
+            raise TypeError(
+                f'Type `{self.__class__.__name__}` does not support '
+                f'operator `>>` with type `{other.__class__.__name__}`!'
+            )
+        return IntegerObject(value=self.value >> other.value)
+
     def __add__(
         self,
         other: Union['IntegerObject', 'FloatObject'],
@@ -579,11 +597,11 @@ class ListObject(DataStructureObject):
         return self
 
     def sort(self) -> 'ListObject':
-        """Returns the reversed list."""
+        """Returns the sorted list."""
         return ListObject(elements=sorted(self.elements))  # type: ignore[type-var]
 
     def isort_e(self) -> 'ListObject':
-        """Reverses the list and returns the new state."""
+        """Sorts the list in its own place."""
         self.elements = sorted(self.elements)  # type: ignore[type-var]
         return self
 

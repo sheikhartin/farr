@@ -29,6 +29,9 @@ from farr.parser.nodes import (
     BlockNode,
     PassNode,
     NullNode,
+    BinaryNode,
+    OctalNode,
+    HexadecimalNode,
     IntegerNode,
     FloatNode,
     StringNode,
@@ -39,6 +42,7 @@ from farr.parser.nodes import (
     ListNode,
     HashMapNode,
     PairNode,
+    ExpandableArgumentNode,
     CallNode,
     GroupedExpressionNode,
     NegationOperationNode,
@@ -52,7 +56,10 @@ from farr.parser.nodes import (
     TernaryOperationNode,
     UseNode,
     VariableDeclarationNode,
+    VariadicParameterDeclarationNode,
     AssignmentNode,
+    LeftShiftAssignmentNode,
+    RightShiftAssignmentNode,
     AddAssignmentNode,
     SubtractAssignmentNode,
     MultiplyAssignmentNode,
@@ -170,6 +177,21 @@ class FarrInterpreter(Interpreter):
     def _interpret_null_node(self, node: NullNode) -> NullObject:
         """Returns a `NullObject`."""
         return NullObject()
+
+    def _interpret_binary_node(self, node: BinaryNode) -> IntegerObject:
+        """Converts a `BinaryNode` to a `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 2))
+
+    def _interpret_octal_node(self, node: OctalNode) -> IntegerObject:
+        """Converts an `OctalNode` to an `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 8))
+
+    def _interpret_hexadecimal_node(
+        self,
+        node: HexadecimalNode,
+    ) -> IntegerObject:
+        """Converts a `HexadecimalNode` to a `IntegerObject`."""
+        return IntegerObject(value=int(node.value, 16))
 
     def _interpret_integer_node(self, node: IntegerNode) -> IntegerObject:
         """Converts an `IntegerNode` to an `IntegerObject`."""
@@ -316,25 +338,91 @@ class FarrInterpreter(Interpreter):
         args: ItemizedExpressionNode,
     ) -> None:
         """Tries to assign arguments to parameters."""
-        required, _ = partition_a_sequence(
+        required, optional = partition_a_sequence(
             params.items, lambda x: x.expression is None
+        )
+        required, variadic = partition_a_sequence(
+            required,
+            lambda x: not isinstance(x, VariadicParameterDeclarationNode),
         )
         args_, kwargs = partition_a_sequence(
             args.items, lambda x: not isinstance(x, AssignmentNode)
         )
-        if len(args.items) > len(params.items) or len(args_) < len(required):
+        args_, exp_args = partition_a_sequence(
+            args_, lambda x: not isinstance(x, ExpandableArgumentNode)
+        )
+        if len(args.items) > len(params.items) and not variadic:
             raise TypeError(
-                'It seems that there is a problem with '
-                'matching parameters and arguments!'
+                'Too many arguments provided. '
+                'Please check the function definition.'
             )
-        for param, arg in zip(required, args_):
-            self.environment.assign(param.identifier.value, arg)
+        elif len(args.items) < len(required) and not variadic and not exp_args:
+            raise TypeError(
+                'Not enough arguments provided for the required parameters.'
+            )
+        elif not args_ and not exp_args and required:
+            raise TypeError('Required parameters are missing arguments.')
+        elif (args_ or exp_args) and not required and optional:
+            raise TypeError(
+                'Positional arguments provided but the function expects '
+                'only keyword arguments.'
+            )
+        elif kwargs and not optional:
+            raise TypeError(
+                'Keyword arguments provided but the function does not accept them.'
+            )
+        elif len(variadic) > 1:
+            raise TypeError(
+                'Multiple variadic parameters defined. '
+                'A function can only have one variadic parameter.'
+            )
+
+        for param, arg in zip(required.copy(), args_.copy()):
+            required.pop(0)
+            args_.pop(0)
+            self.environment.assign(
+                param.identifier.value,
+                self._interpret(arg),
+            )
+        if (
+            exp_args
+            and (exp_args := self._interpret(exp_args.pop(0).expression))
+            and variadic
+            and not required
+        ):
+            self.environment.assign(variadic.pop(0).identifier.value, exp_args)
+        elif (
+            exp_args
+            and len(exp_args.elements) == len(required)  # type: ignore[attr-defined]
+            and not variadic
+        ):
+            for param, arg in zip(required, exp_args):
+                self.environment.assign(param.identifier.value, arg)
+        elif exp_args and required:
+            for param, arg in zip(required.copy(), exp_args.elements.copy()):  # type: ignore[attr-defined]
+                required.pop(0)
+                exp_args.elements.pop(0)  # type: ignore[attr-defined]
+                self.environment.assign(param.identifier.value, arg)
+            if exp_args and not variadic:
+                raise TypeError(
+                    'Extra arguments remain after unpacking, but no variadic '
+                    'parameter is available to receive them.'
+                )
+            variadic_ = self.environment.locate(
+                variadic.pop(0).identifier.value
+            )
+            variadic_.elements.extend(exp_args)
+        elif args_ and variadic:
+            variadic_ = self.environment.locate(
+                variadic.pop(0).identifier.value
+            )
+            variadic_.elements.extend(map(self._interpret, args_))
         for kwarg in kwargs:
             if not self.environment.exists(
                 name := kwarg.references.items.copy().pop().value, 0
             ):
                 raise NameError(f'There is no parameter name `{name}`!')
-            self.environment.assign(name, kwarg.expression)
+            self.environment.assign(name, self._interpret(kwarg.expression))
         return None
 
     def _call_non_python_native_object(
@@ -343,24 +431,6 @@ class FarrInterpreter(Interpreter):
         args: ItemizedExpressionNode,
     ) -> FarrObject:
         """Calls native objects of our language."""
-        # To avoid passing something that should be called, we interpret
-        # the arguments here. We could also create a new object to provide
-        # a more meaningful structure and use that to assign keyword arguments,
-        # but at least for now we use `AssignmentNode`...
-        args_, kwargs = partition_a_sequence(
-            args.items, lambda x: not isinstance(x, AssignmentNode)
-        )
-        args_ = list(map(self._interpret, args_))
-        kwargs = list(
-            map(
-                lambda x: AssignmentNode(
-                    references=x.references,
-                    expression=self._interpret(x.expression),
-                ),
-                kwargs,
-            )
-        )
-
         environment_backup = self.environment
         self.environment = Environment(
             parent=(
@@ -383,7 +453,7 @@ class FarrInterpreter(Interpreter):
                 )
                 else invoke.attributes  # type: ignore[attr-defined]
             ),
-            ItemizedExpressionNode(items=sum([args_, kwargs], [])),
+            args,
         )
         try:
             self._interpret(invoke.body)
@@ -587,6 +657,10 @@ class FarrInterpreter(Interpreter):
         right = self._interpret(node.right)
 
         match node.operator:
+            case 'LeftShift':
+                return left << right
+            case 'RightShift':
+                return left >> right
             case 'Add':
                 return left + right
             case 'Subtract':
@@ -749,6 +823,20 @@ class FarrInterpreter(Interpreter):
             ),
         )
 
+    def _interpret_variadic_parameter_declaration_node(
+        self,
+        node: VariadicParameterDeclarationNode,
+    ) -> None:
+        """Interprets a variadic parameter declaration node."""
+        self.environment.assign(
+            node.identifier.value,
+            (
+                self._interpret(node.expression)
+                if node.expression is not None
+                else ListObject(elements=[])
+            ),
+        )
+
     def _interpret_assignment_node(self, node: AssignmentNode) -> None:
         """Updates the content of a variable."""
         *pointers, target = node.references.items
@@ -769,6 +857,68 @@ class FarrInterpreter(Interpreter):
             return None
         pointer.environment.replace(
             target.value, self._interpret(node.expression)  # type: ignore[union-attr]
+        )
+
+    def _interpret_left_shift_assignment_node(
+        self,
+        node: LeftShiftAssignmentNode,
+    ) -> None:
+        """Performs a left shift assignment on the target variable."""
+        *pointers, target = node.references.items
+        if not pointers:
+            self.environment.replace(
+                target.value,  # type: ignore[union-attr]
+                self.environment.locate(target.value)  # type: ignore[union-attr]
+                << self._interpret(node.expression),
+            )
+            return None
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] <<= self._interpret(
+                node.expression
+            )
+            return None
+        pointer.environment.replace(
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            << self._interpret(node.expression),
+        )
+
+    def _interpret_right_shift_assignment_node(
+        self,
+        node: RightShiftAssignmentNode,
+    ) -> None:
+        """Performs a right shift assignment on the target variable."""
+        *pointers, target = node.references.items
+        if not pointers:
+            self.environment.replace(
+                target.value,  # type: ignore[union-attr]
+                self.environment.locate(target.value)  # type: ignore[union-attr]
+                >> self._interpret(node.expression),
+            )
+            return None
+        pointer = self._interpret(pointers.pop(0))
+        while pointers:
+            pointer = (
+                getattr(pointer, link.value)  # type: ignore[union-attr]
+                if not isinstance(link := pointers.pop(0), RangeNode)
+                else pointer[self._interpret(link)]
+            )
+        if not hasattr(pointer, 'environment'):
+            pointer[self._interpret(target)] >>= self._interpret(
+                node.expression
+            )
+            return None
+        pointer.environment.replace(
+            target.value,  # type: ignore[union-attr]
+            pointer.environment.locate(target.value)  # type: ignore[union-attr]
+            >> self._interpret(node.expression),
         )
 
     def _interpret_add_assignment_node(self, node: AddAssignmentNode) -> None:
