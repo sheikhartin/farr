@@ -129,8 +129,18 @@ def test_definitions_and_manipulations_interpretation(
     )
 
 
-@pytest.mark.xfail(raises=SystemExit)
+@pytest.mark.parametrize(
+    ('invocation',),
+    [
+        pytest.param('add()', marks=pytest.mark.xfail),
+        pytest.param('add(1, y=2)', marks=pytest.mark.xfail),
+        pytest.param('add(...{1, 2, 3})', marks=pytest.mark.xfail),
+        pytest.param('add_one(1)', marks=pytest.mark.xfail),
+        pytest.param('add_one(...{1,})', marks=pytest.mark.xfail),
+    ],
+)
 def test_type_error_on_invocation(
+    invocation: str,
     farr_regex_lexer_fixture: FarrRegexLexer,
     farr_parser_fixture: FarrParser,
     farr_interpreter_fixture: FarrInterpreter,
@@ -140,14 +150,16 @@ def test_type_error_on_invocation(
         farr_parser_fixture.parse(
             farr_regex_lexer_fixture.tokenize(
                 textwrap.dedent(
-                    """
-                    fn add(let x, let y) = {
+                    f"""
+                    fn add(let x, let y) = {{
                       return! + x y;
-                    }
+                    }}
 
-                    add();
-                    add(1, y=2);
-                    add(...{1, 2, 3});
+                    fn add_one(let x = 10) = {{
+                      return! + x 1;
+                    }}
+
+                    {invocation};
                     """
                 )
             )
