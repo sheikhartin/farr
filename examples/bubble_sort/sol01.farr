@@ -1,0 +1,26 @@
+/**
+ * Bubble sort is a simple sorting algorithm that repeatedly steps through
+ * the list, compares adjacent elements and swaps them if they are in
+ * the wrong order. This process is repeated until the list is sorted.
+ */
+
+use math/random;
+
+fn bubble_sort(let list) = {
+  let length = list.length;
+  for let i in [1..length] = {
+    for let j in [1..- length i] = {
+      if list.[j] > list.[+ j 1] = {
+        let tmp = list.[j];
+        list.[j] = list.[+ j 1];
+        list.[+ j 1] = tmp;
+      }
+    }
+  }
+  return! list;
+}
+
+let nums = random.randint(0, 50, size=10);
+
+println("Before sorting: ${nums}");
+println("After sorting: ${bubble_sort(nums)}");
