@@ -5,8 +5,8 @@
  */
 fn _system_type() = {
   if (
-    cmd!?("uname -s 2>/dev/null || ver >nul 2>&1")
-    .contains?("Microsoft")
+    cmd!?("echo $SHELL")
+    .contains?("$")
   ) = {
     return! "Windows";
   }
