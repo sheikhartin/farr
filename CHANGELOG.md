@@ -1,3 +1,11 @@
+### [1.4.2](https://github.com/sheikhartin/farr/releases/tag/1.4.2)
+
+Moving the algorithms library to the [examples](examples) folder.
+
+### [1.4.1](https://github.com/sheikhartin/farr/releases/tag/1.4.1)
+
+A hotfix for interpreting arguments before creating a new environment!
+
 ### [1.4.0](https://github.com/sheikhartin/farr/releases/tag/1.4.0)
 
 Enhancements and new features in invocation and operations:
