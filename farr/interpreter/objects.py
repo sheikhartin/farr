@@ -149,6 +149,24 @@ class BooleanObject(HeterogeneousLiteralObject):
 
 
 class IntegerObject(HeterogeneousLiteralObject):
+    def __lshift__(self, other: 'IntegerObject') -> 'IntegerObject':
+        """Performs bitwise left shift."""
+        if not isinstance(other, IntegerObject):
+            raise TypeError(
+                f'Type `{self.__class__.__name__}` does not support '
+                f'operator `<<` with type `{other.__class__.__name__}`!'
+            )
+        return IntegerObject(value=self.value << other.value)
+
+    def __rshift__(self, other: 'IntegerObject') -> 'IntegerObject':
+        """Performs bitwise right shift."""
+        if not isinstance(other, IntegerObject):
+            raise TypeError(
+                f'Type `{self.__class__.__name__}` does not support '
+                f'operator `>>` with type `{other.__class__.__name__}`!'
+            )
+        return IntegerObject(value=self.value >> other.value)
+
     def __add__(
         self,
         other: Union['IntegerObject', 'FloatObject'],
@@ -478,6 +496,24 @@ class ListObject(DataStructureObject):
             )
         )
 
+    def __setitem__(
+        self,
+        key: 'RangeObject',
+        value: FarrObject,
+    ) -> None:
+        """Updates the elements based on the given range."""
+        if key.from_.value <= 0 or key.by is not None and key.by.value <= 0:  # type: ignore[union-attr]
+            raise IndexError('Non-positive indexes are not allowed!')
+        elif key.to is None and key.by is None:
+            self.elements[key.from_.value - 1] = value  # type: ignore[union-attr]
+            return None
+        self.elements[  # type: ignore[call-overload]
+            key.from_.value  # type: ignore[union-attr]
+            - 1 : key.to.value if key.to is not None else None : (
+                key.by.value if key.by is not None else None
+            )
+        ] = value
+
     def __iter__(self) -> 'ListObject':
         """Iterates the elements in the list."""
         self._index = 0
@@ -553,11 +589,20 @@ class ListObject(DataStructureObject):
 
     def reverse(self) -> 'ListObject':
         """Returns the reversed list."""
-        return ListObject(elements=sorted(self.elements, reverse=True))  # type: ignore[type-var]
+        return ListObject(elements=list(reversed(self.elements)))  # type: ignore[type-var]
 
     def ireverse_e(self) -> 'ListObject':
         """Reverses the list and returns the new state."""
-        self.elements = sorted(self.elements, reverse=True)  # type: ignore[type-var]
+        self.elements = list(reversed(self.elements))  # type: ignore[type-var]
+        return self
+
+    def sort(self) -> 'ListObject':
+        """Returns the sorted list."""
+        return ListObject(elements=sorted(self.elements))  # type: ignore[type-var]
+
+    def isort_e(self) -> 'ListObject':
+        """Sorts the list in its own place."""
+        self.elements = sorted(self.elements)  # type: ignore[type-var]
         return self
 
     def shuffle(self) -> 'ListObject':
