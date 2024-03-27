@@ -360,6 +360,10 @@ class FarrInterpreter(Interpreter):
             raise TypeError(
                 'Not enough arguments provided for the required parameters.'
             )
+        elif len(args_) > len(required) and not variadic:
+            raise TypeError(
+                'Provided more positional arguments than the function accepts.'
+            )
         elif not args_ and not exp_args and required:
             raise TypeError('Required parameters are missing arguments.')
         elif (args_ or exp_args) and not required and optional:
@@ -370,6 +374,14 @@ class FarrInterpreter(Interpreter):
         elif kwargs and not optional:
             raise TypeError(
                 'Keyword arguments provided but the function does not accept them.'
+            )
+        elif kwargs and set(
+            map(lambda x: x.references.items[0].value, kwargs)
+        ).isdisjoint(map(lambda x: x.identifier.value, optional)):
+            raise TypeError(
+                'Provided keyword arguments do not correspond to any optional '
+                'parameters. Please check the function definition for valid '
+                'parameter names.'
             )
         elif len(variadic) > 1:
             raise TypeError(

@@ -5,4 +5,4 @@
 
 __author__ = 'Artin Mohammadi <sheikhartin@gmail.com>'
 __license__ = 'MIT'
-__version__ = '1.4.0'
+__version__ = '1.4.2'
