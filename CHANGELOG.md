@@ -1,3 +1,7 @@
+### [1.4.3](https://github.com/sheikhartin/farr/releases/tag/1.4.3)
+
+More examples and adding a workflow to make sure Farr works correctly on different platforms and Python versions.
+
 ### [1.4.2](https://github.com/sheikhartin/farr/releases/tag/1.4.2)
 
 Moving the algorithms library to the [examples](examples) folder.
