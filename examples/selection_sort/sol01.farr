@@ -1,0 +1,28 @@
+/**
+ * Implementation of the selection sort algorithm that iterates through a list
+ * to find the minimum element and places it at the beginning, sorting the list
+ * in ascending order.
+ */
+
+use math/random;
+
+fn selection_sort(let list) = {
+  let length = list.length;
+  for let i in [1..length] = {
+    let min = i;
+    for let j in [+ i 1..length] = {
+      if list.[j] < list.[min] = {
+        min = j;
+      }
+    }
+    let tmp = list.[i];
+    list.[i] = list.[min];
+    list.[min] = tmp;
+  }
+  return! list;
+}
+
+let nums = random.randint(0, 50, size=10);
+
+println("Before sorting: ${nums}");
+println("After sorting: ${selection_sort(nums)}");
