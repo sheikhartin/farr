@@ -1,0 +1,16 @@
+/**
+ * Repeatedly prints user input after a set delay.
+ */
+
+use os;
+
+let text = readln!("What do you want to print? ");
+let delay = (
+  readln!("How many seconds do you want to delay? ")
+  .toint()
+);
+
+while true = {
+  println(text);
+  os._python("import time; time.sleep(${delay})"); // Or `cmd!?("sleep ${delay}");`
+}
